@@ -1,10 +1,10 @@
 {
-  "version": "1.2.3",
-  "versionCode": 6,
+  "version": "1.2.4",
+  "versionCode": 7,
   "updateType": "optional",
-  "changelog": "v1.2.3 — ওয়ালেট কার্ড (নাম+লোগো+নম্বর), প্রতি ওয়ালেটে সিম স্লট অটো-ডিটেক্ট/ম্যানুয়াল, ডুয়াল সিম থেকে উভয় সিমের SMS সঠিকভাবে ফরওয়ার্ড, নতুন আপডেটে অ্যালার্ট ডায়ালগ, লাইসেন্স আবেদন বাটন। বিস্তারিত: Changelog.md",
+  "changelog": "v1.2.4 — বড় বাগ ফিক্স: ব্যর্থ আপলোডে বার্তা আর মুছে যাবে না, ভুয়া 'নেটওয়ার্ক সমস্যা' এলার্ম ঠিক, কাউন্টার রিসেট বন্ধ, প্রতি ওয়ালেটে সিম স্লট ড্রপডাউন, স্মার্ট রিট্রাই। বিস্তারিত: Changelog.md",
   "changelogUrl": "https://raw.githubusercontent.com/A2MBD3/PayPilot/main/Changelog.md",
-  "apkUrl": "https://github.com/A2MBD3/PayPilot/releases/download/v1.2.3/PayPilot-v1.2.3.apk",
+  "apkUrl": "https://github.com/A2MBD3/PayPilot/releases/download/v1.2.4/PayPilot-v1.2.4.apk",
   "minUninstallFirst": false,
-  "notes": "wallet cards with per-wallet SIM slot detection; update alert dialog; license application button"
+  "notes": "SMS queue data-loss fix, false network-error fix, counter reset fix, per-wallet SIM slot dropdown, exponential backoff retry"
 }
