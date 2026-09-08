@@ -1,0 +1,9 @@
+{
+  "version": "1.2.1",
+  "versionCode": 4,
+  "updateType": "must",
+  "changelog": "v1.2.1 — স্টার্টআপ ক্র্যাশ ফিক্স ও আপডেট সিস্টেম উন্নয়ন। বিস্তারিত: Changelog.md",
+  "changelogUrl": "https://raw.githubusercontent.com/A2MBD3/PayPilot/main/Changelog.md",
+  "apkUrl": "https://github.com/A2MBD3/PayPilot/releases/download/v1.2.1/PayPilot-v1.2.1.apk",
+  "minUninstallFirst": false
+}
