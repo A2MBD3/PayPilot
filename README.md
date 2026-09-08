@@ -43,8 +43,8 @@ The app is built to run reliably around the clock. It starts automatically when 
 |---|---|---|
 | 📲 | **Real-time payment monitoring** | Payment confirmation SMS are captured the moment they arrive and synced to your dashboard within seconds. |
 | 🔄 | **Never lose a payment** | No internet? Messages are kept in an encrypted on-device queue and delivered automatically when you're back online. |
-| 🔐 | **Encrypted local storage** | Queued messages, counters and credentials are encrypted with hardware-backed keys (AES-256-GCM, Android Keystore). |
-| 🛡️ | **Hardened connection** | All server communication runs over HTTPS with certificate pinning — man-in-the-middle tools cannot intercept your data. |
+| 🔐 | **Encrypted local storage** | Sensitive data on the device is stored encrypted so other apps cannot read it. |
+| 🛡️ | **Hardened connection** | All server communication runs over HTTPS with encrypted connection — man-in-the-middle tools cannot intercept your data. |
 | 🔁 | **Auto-start & keep-alive** | Starts on boot, restarts if the system stops it, and guides you through battery-optimization exemption so it keeps running. |
 | 📶 | **Dual-SIM support** | Every connected wallet gets its own card (name, logo, number); its SIM slot is auto-detected from the wallet number — or pick a slot manually per wallet. Both SIMs forward simultaneously. |
 | 💳 | **Wallet cards** | All wallets linked to your account (even the same number on multiple wallets) show as separate cards with their logo, receiver number and SIM slot. |
@@ -79,8 +79,8 @@ The app is built to run reliably around the clock. It starts automatically when 
 PayPilot is designed around a simple principle: **only payment confirmations, only for the licensed merchant.**
 
 - **What the app reads** — while monitoring is active, PayPilot processes incoming payment-confirmation SMS on the licensed device. It does not read, store or send your personal messages, contacts, photos or files.
-- **How data is protected on the device** — queued messages, counters and your license are stored encrypted (AES-256-GCM) using hardware-backed Android Keystore keys. Even if someone gets the phone, the data stays scrambled without the device.
-- **How data travels** — all communication uses HTTPS with certificate pinning, so the connection cannot be silently intercepted or redirected.
+- **How data is protected on the device** — sensitive local data (including your license) is stored encrypted so other apps cannot read it.
+- **How data travels** — all communication uses HTTPS with encrypted connection, so the connection cannot be silently intercepted or redirected.
 - **What is never done** — PayPilot does not sell your data, does not show ads, and does not collect anything beyond what is needed to run the payment monitoring service.
 - **Signed releases** — every official APK is digitally signed. If you download from this repository's Releases, you're getting the genuine app.
 
