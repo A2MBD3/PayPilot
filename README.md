@@ -121,17 +121,15 @@ Yes. The app auto-detects the SIM that receives your payment SMS, and you can ma
 Android 8.0 (Oreo) and above — including the latest Android releases, with modern notification permissions handled automatically.
 </details>
 
-## 🔌 Public API
+## 🔌 Payment verification API
 
-PayPilot is more than a dashboard — websites can **verify a bKash payment by
-its TrxID** through a small REST API. One-time claims, amount matching,
-expiry windows and replay protection are built in.
+Merchants verify bKash payments **from their private server** with a one-time claim API (`POST /api/v1/verify`). Use the **API license** from the dashboard Authorization tab — never embed it in a browser or public client.
 
-📖 Full reference: **[docs/API.md](docs/API.md)** (English) · [docs/API.bn.md](docs/API.bn.md) (বাংলা)
+📖 Full guide + code samples (Node, PHP, Python, Go, Java, cURL): **[docs/API.md](docs/API.md)** · [বাংলা](docs/API.bn.md)
 
 ```bash
 curl -X POST https://paypilot-5p9t.onrender.com/api/v1/verify \
-  -H "Authorization: Bearer <LICENSE-KEY>" \
+  -H "Authorization: Bearer $PAYPILOT_API_LICENSE" \
   -H "Content-Type: application/json" \
   -d '{"trx_id":"DI739OTDF3","amount":100.00,"order_id":"ORDER-1024"}'
 ```

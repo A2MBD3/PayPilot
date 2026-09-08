@@ -121,17 +121,15 @@ PayPilot Play Store-এর বদলে সরাসরি GitHub-এ বিত�
 Android 8.0 (Oreo) থেকে সর্বশেষ Android পর্যন্ত — নতুন ভার্সনগুলোর নোটিফিকেশন পারমিশনও স্বয়ংক্রিয়ভাবে সামলানো হয়।
 </details>
 
-## 🔌 পাবলিক API
+## 🔌 পেমেন্ট ভেরিফিকেশন API
 
-PayPilot শুধু ড্যাশবোর্ড নয় — ক্লায়েন্টের ওয়েবসাইট **TrxID দিয়ে সরাসরি bKash
-পেমেন্ট যাচাই** করতে পারে ছোট্ট একটি REST API দিয়ে। এককালীন দাবি, অঙ্ক মিলান,
-সময়সীমা ও রিপ্লে-প্রোটেকশন বিল্ট-ইন।
+মার্চেন্ট **নিজের প্রাইভেট সার্ভার** থেকে bKash পেমেন্ট একবারের জন্য যাচাই করতে পারেন (`POST /api/v1/verify`)। ড্যাশবোর্ড **Authorization** ট্যাবের **API license** ব্যবহার করুন — ব্রাউজার বা পাবলিক ক্লায়েন্টে রাখবেন না।
 
-📖 সম্পূর্ণ ডকুমেন্টেশন: **[docs/API.bn.md](docs/API.bn.md)** (বাংলা) · [docs/API.md](docs/API.md) (English)
+📖 সম্পূর্ণ গাইড + কোড ডেমো (Node, PHP, Python, Go, Java, cURL): **[docs/API.bn.md](docs/API.bn.md)** · [English](docs/API.md)
 
 ```bash
 curl -X POST https://paypilot-5p9t.onrender.com/api/v1/verify \
-  -H "Authorization: Bearer <LICENSE-KEY>" \
+  -H "Authorization: Bearer $PAYPILOT_API_LICENSE" \
   -H "Content-Type: application/json" \
   -d '{"trx_id":"DI739OTDF3","amount":100.00,"order_id":"ORDER-1024"}'
 ```

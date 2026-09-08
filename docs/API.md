@@ -1,57 +1,51 @@
-# PayPilot API — v1
+# PayPilot Payment Verification API
 
-> The PayPilot REST API is not limited to the in-app dashboard feed — a client
-> website can **verify a transaction by its TrxID** directly through the API.
-> বাংলা ভার্সন: [`docs/API.bn.md`](API.bn.md)
+> **Server-to-server only.** Call this API from your **private backend** after a customer submits a bKash TrxID.  
+> Never put your API license in browser JavaScript, mobile apps you distribute, or public repos.  
+> বাংলা: [`docs/API.bn.md`](API.bn.md)
 
-- **Base URL:** `https://paypilot-5p9t.onrender.com`
-- **Format:** JSON request/response, UTF-8
-- **Auth:** `Authorization: Bearer <token>` (license key / web token / owner token)
-- **Rate limits:** general API **300 req/min** · device routes **600 req/min** · login **30 req/15 min**
+| | |
+|--|--|
+| **Base URL** | `https://paypilot-5p9t.onrender.com` |
+| **Endpoint** | `POST /api/v1/verify` |
+| **Auth** | `Authorization: Bearer <API_LICENSE>` |
+| **Content-Type** | `application/json` |
+| **Rate limit** | ~300 requests / minute |
 
----
-
-## Response envelope
-
-Success:
-
-```json
-{ "success": true, "message": "...", "data": { } }
-```
-
-Failure:
-
-```json
-{ "success": false, "code": "NOT_FOUND", "message": "Transaction not found" }
-```
-
-| HTTP | Code | Meaning |
-|------|------|---------|
-| 400 | `VALIDATION_ERROR` | Malformed input |
-| 401 | `UNAUTHORIZED` | Missing / invalid / expired token |
-| 401 | `TOKEN_REVOKED` | License was regenerated — old token is dead |
-| 403 | `DISABLED` | Merchant account suspended |
-| 401 | `INVALID_CREDENTIALS` | Wrong username/password |
-| 404 | `NOT_FOUND` | Resource not found |
-| 429 | `RATE_LIMITED` | Too many requests |
-| 500 | `INTERNAL_ERROR` | Server error |
+Your **API license** is issued in the merchant dashboard under **Authorization → API license**.  
+Regenerating it immediately revokes the previous key.
 
 ---
 
-## 1) Verify a transaction (the website-integration endpoint)
+## Flow
 
-### `POST /api/v1/verify`
+```
+Customer pays via bKash (personal)
+        ↓
+Customer enters TrxID (and optionally amount) on your site
+        ↓
+Your private server  ──POST /api/v1/verify──►  PayPilot
+        ↓
+PayPilot marks the payment claimed (one-time)
+        ↓
+Your server fulfills the order
+```
 
-Verifies a payment by TrxID. This is a **one-time claim** — on success the
-transaction becomes `used` and can **never be verified again**, which blocks
-replay/duplicate-order abuse. For a read-only lookup use
-`GET /api/v1/transactions/{trxId}`.
+- Verification is a **one-time claim**. A successful call sets status to `used` / `claimed`.
+- The same `trx_id` cannot be verified again (`ALREADY_USED`).
+- Optional `amount` must match the SMS amount when provided.
+- Optional `max_age_minutes` (default **60**) rejects older payments (`EXPIRED`).
 
-**Auth:** merchant license key (Bearer)
+---
 
-**Request**
+## Request
 
-```json
+```http
+POST /api/v1/verify HTTP/1.1
+Host: paypilot-5p9t.onrender.com
+Authorization: Bearer <API_LICENSE>
+Content-Type: application/json
+
 {
   "trx_id": "DI739OTDF3",
   "amount": 100.00,
@@ -62,12 +56,14 @@ replay/duplicate-order abuse. For a read-only lookup use
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `trx_id` | string (5–30) | ✅ | TrxID from the bKash payment SMS |
-| `amount` | number > 0 | ❌ | When present the server matches the amount (±0.001) |
-| `order_id` | string ≤ 100 | ❌ | Your order reference — stored with the transaction |
-| `max_age_minutes` | int 1–1440 | ❌ | Default 60 minutes; older transactions return `EXPIRED` |
+| `trx_id` | string (5–30) | **Yes** | Transaction ID from the customer’s bKash SMS |
+| `amount` | number > 0 | No | If set, must match stored amount (±0.001) |
+| `order_id` | string ≤ 100 | No | Your order reference; stored on success |
+| `max_age_minutes` | int 1–1440 | No | Max age of the payment; default `60` |
 
-**Success `200`**
+---
+
+## Success response (`200`)
 
 ```json
 {
@@ -80,7 +76,7 @@ replay/duplicate-order abuse. For a read-only lookup use
     "sender": "01722858922",
     "status": "used",
     "category": "claimed",
-    "app": "My Shop bKash",
+    "app": "bKash",
     "received_at": "2026-09-08T16:32:00.000Z",
     "used_at": "2026-09-08T16:40:12.480Z",
     "order_id": "ORDER-1024"
@@ -88,248 +84,258 @@ replay/duplicate-order abuse. For a read-only lookup use
 }
 ```
 
-**Failure codes (HTTP 400):**
+| Field | Meaning |
+|-------|---------|
+| `trx_id` | Confirmed transaction id |
+| `amount` | Amount received |
+| `sender` | Payer mobile (when parsed) |
+| `status` | `used` after claim |
+| `category` | `claimed` |
+| `app` | Matched wallet label (if any) — informational only; **do not send this field** |
+| `order_id` | Echo of your order id |
 
-| Code | Meaning |
-|------|---------|
-| `NOT_FOUND` | No such transaction for this merchant |
-| `ALREADY_USED` | Already claimed once — **replay rejected** |
-| `ATTACK` | Sender/receiver mismatch — suspicious message |
-| `EXPIRED` | `max_age_minutes` window exceeded |
-| `AMOUNT_MISMATCH` | Amount did not match (expected amount in message) |
+---
 
-**⚠️ Security rules**
+## Error responses
 
-- Never ship the license key inside browser or mobile-client code — keep it
-  **server-side only**.
-- Call `verify` from your **payment callback / backend**, never from the end
-  user's browser.
-- Always send `amount` so a wrong-amount payment is rejected automatically.
+Envelope:
 
-**Examples**
+```json
+{ "success": false, "code": "NOT_FOUND", "message": "Transaction not found" }
+```
 
-cURL:
+| HTTP | `code` | When |
+|------|--------|------|
+| 400 | `VALIDATION_ERROR` | Missing/invalid body |
+| 400 | `NOT_FOUND` | Unknown `trx_id` for this merchant |
+| 400 | `AMOUNT_MISMATCH` | `amount` does not match |
+| 400 | `ALREADY_USED` | Already verified / claimed |
+| 400 | `EXPIRED` | Older than `max_age_minutes` |
+| 400 | `ATTACK` | Flagged payment (do not fulfill) |
+| 401 | `UNAUTHORIZED` | Missing/invalid API license |
+| 401 | `TOKEN_REVOKED` | License was regenerated |
+| 403 | `DISABLED` | Merchant account suspended |
+| 429 | `RATE_LIMITED` | Too many requests |
+
+Only fulfill the order when `success === true` and `code === "VERIFIED"`.
+
+---
+
+## Security checklist
+
+1. Call **only from your backend** (Node, PHP, Laravel, etc.).
+2. Store `API_LICENSE` in environment variables / secrets manager.
+3. Never expose the license to the browser or a public client.
+4. Prefer sending both `trx_id` and `amount`.
+5. On `ALREADY_USED`, do not deliver the product again without your own order audit.
+6. Treat `ATTACK` / `EXPIRED` as payment failure.
+
+---
+
+## Code demos
+
+Replace `API_LICENSE`, base URL, and order fields with your values.
+
+### cURL
 
 ```bash
-curl -X POST https://paypilot-5p9t.onrender.com/api/v1/verify \
-  -H "Authorization: Bearer $PAYPILOT_LICENSE" \
-  -H "Content-Type: application/json" \
-  -d '{"trx_id":"DI739OTDF3","amount":100.00,"order_id":"ORDER-1024"}'
+curl -sS -X POST 'https://paypilot-5p9t.onrender.com/api/v1/verify' \
+  -H "Authorization: Bearer ${PAYPILOT_API_LICENSE}" \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "trx_id": "DI739OTDF3",
+    "amount": 100.00,
+    "order_id": "ORDER-1024",
+    "max_age_minutes": 60
+  }'
 ```
 
-Node.js:
+### Node.js (fetch)
 
 ```js
-const res = await fetch('https://paypilot-5p9t.onrender.com/api/v1/verify', {
-  method: 'POST',
-  headers: {
-    'Authorization': `Bearer ${process.env.PAYPILOT_LICENSE}`,
-    'Content-Type': 'application/json',
-  },
-  body: JSON.stringify({ trx_id, amount: 100.0, order_id }),
-});
-const { success, code, data } = await res.json();
-if (success && code === 'VERIFIED') {
-  // one-time claim succeeded — deliver the order
+async function verifyPayment({ trxId, amount, orderId }) {
+  const res = await fetch('https://paypilot-5p9t.onrender.com/api/v1/verify', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${process.env.PAYPILOT_API_LICENSE}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      trx_id: trxId,
+      amount,
+      order_id: orderId,
+      max_age_minutes: 60,
+    }),
+  });
+  const body = await res.json();
+  if (!body.success || body.code !== 'VERIFIED') {
+    throw new Error(body.message || body.code || 'verify failed');
+  }
+  return body.data; // fulfill order
 }
+
+// Example
+// await verifyPayment({ trxId: 'DI739OTDF3', amount: 100, orderId: 'ORDER-1024' });
 ```
 
-PHP:
+### PHP
 
 ```php
-$ch = curl_init('https://paypilot-5p9t.onrender.com/api/v1/verify');
-curl_setopt_array($ch, [
-  CURLOPT_POST => true,
-  CURLOPT_RETURNTRANSFER => true,
-  CURLOPT_HTTPHEADER => [
-    'Authorization: Bearer ' . getenv('PAYPILOT_LICENSE'),
-    'Content-Type: application/json',
-  ],
-  CURLOPT_POSTFIELDS => json_encode([
-    'trx_id' => $trxId, 'amount' => 100.00, 'order_id' => $orderId,
-  ]),
-]);
-$result = json_decode(curl_exec($ch), true);
+<?php
+function paypilot_verify(string $trxId, ?float $amount = null, ?string $orderId = null): array {
+    $payload = ['trx_id' => $trxId, 'max_age_minutes' => 60];
+    if ($amount !== null) $payload['amount'] = $amount;
+    if ($orderId !== null) $payload['order_id'] = $orderId;
+
+    $ch = curl_init('https://paypilot-5p9t.onrender.com/api/v1/verify');
+    curl_setopt_array($ch, [
+        CURLOPT_POST => true,
+        CURLOPT_HTTPHEADER => [
+            'Authorization: Bearer ' . getenv('PAYPILOT_API_LICENSE'),
+            'Content-Type: application/json',
+        ],
+        CURLOPT_POSTFIELDS => json_encode($payload),
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT => 20,
+    ]);
+    $raw = curl_exec($ch);
+    if ($raw === false) {
+        throw new RuntimeException(curl_error($ch));
+    }
+    $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+    $body = json_decode($raw, true);
+    if (!($body['success'] ?? false) || ($body['code'] ?? '') !== 'VERIFIED') {
+        throw new RuntimeException($body['message'] ?? ('HTTP ' . $code));
+    }
+    return $body['data'];
+}
+
+// $data = paypilot_verify('DI739OTDF3', 100.00, 'ORDER-1024');
 ```
 
----
+### Python
 
-## 2) Read transactions (read-only)
+```python
+import os
+import requests
 
-### `GET /api/v1/transactions/{trxId}`
+def verify_payment(trx_id: str, amount: float | None = None, order_id: str | None = None) -> dict:
+    payload = {"trx_id": trx_id, "max_age_minutes": 60}
+    if amount is not None:
+        payload["amount"] = amount
+    if order_id is not None:
+        payload["order_id"] = order_id
 
-Current state of a transaction without claiming it (fee, status, `order_id`).
+    r = requests.post(
+        "https://paypilot-5p9t.onrender.com/api/v1/verify",
+        headers={
+            "Authorization": f"Bearer {os.environ['PAYPILOT_API_LICENSE']}",
+            "Content-Type": "application/json",
+        },
+        json=payload,
+        timeout=20,
+    )
+    body = r.json()
+    if not body.get("success") or body.get("code") != "VERIFIED":
+        raise RuntimeError(body.get("message") or body.get("code") or r.status_code)
+    return body["data"]
 
-```json
-{
-  "success": true,
-  "data": {
-    "trx_id": "DI739OTDF3",
-    "amount": 100.0,
-    "sender": "01722858922",
-    "fee": 0.0,
-    "status": "available",
-    "received_at": "2026-09-08T16:32:00.000Z",
-    "used_at": null,
-    "order_id": null
+# data = verify_payment("DI739OTDF3", 100.0, "ORDER-1024")
+```
+
+### Go
+
+```go
+package main
+
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
+	"os"
+	"time"
+)
+
+func verifyPayment(trxID string, amount *float64, orderID string) (map[string]any, error) {
+	payload := map[string]any{
+		"trx_id":          trxID,
+		"max_age_minutes": 60,
+	}
+	if amount != nil {
+		payload["amount"] = *amount
+	}
+	if orderID != "" {
+		payload["order_id"] = orderID
+	}
+	b, _ := json.Marshal(payload)
+	req, err := http.NewRequest(http.MethodPost, "https://paypilot-5p9t.onrender.com/api/v1/verify", bytes.NewReader(b))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Authorization", "Bearer "+os.Getenv("PAYPILOT_API_LICENSE"))
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{Timeout: 20 * time.Second}
+	res, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+	raw, _ := io.ReadAll(res.Body)
+	var body map[string]any
+	if err := json.Unmarshal(raw, &body); err != nil {
+		return nil, err
+	}
+	if body["success"] != true || body["code"] != "VERIFIED" {
+		return nil, fmt.Errorf("%v", body["message"])
+	}
+	data, _ := body["data"].(map[string]any)
+	return data, nil
+}
+```
+
+### Java (HttpClient)
+
+```java
+import java.net.URI;
+import java.net.http.*;
+import java.time.Duration;
+
+public class PayPilotVerify {
+  public static String verify(String trxId, double amount, String orderId) throws Exception {
+    String json = """
+      {"trx_id":"%s","amount":%s,"order_id":"%s","max_age_minutes":60}
+      """.formatted(trxId, amount, orderId);
+
+    HttpRequest req = HttpRequest.newBuilder()
+        .uri(URI.create("https://paypilot-5p9t.onrender.com/api/v1/verify"))
+        .timeout(Duration.ofSeconds(20))
+        .header("Authorization", "Bearer " + System.getenv("PAYPILOT_API_LICENSE"))
+        .header("Content-Type", "application/json")
+        .POST(HttpRequest.BodyPublishers.ofString(json))
+        .build();
+
+    HttpResponse<String> res = HttpClient.newHttpClient()
+        .send(req, HttpResponse.BodyHandlers.ofString());
+
+    if (res.statusCode() != 200 || !res.body().contains("\"VERIFIED\"")) {
+      throw new IllegalStateException(res.body());
+    }
+    return res.body();
   }
 }
 ```
 
-### `GET /api/v1/transactions?status=&limit=&offset=`
-
-List your transactions (`status`: `available|used|expired|attack`, `limit` ≤ 100, default 50).
-
-```json
-{ "success": true, "data": { "total": 128, "items": [ ... ] } }
-```
-
-### `POST /api/v1/sms/receive` *(advanced)*
-
-Inject a transaction from your own parser (normally unnecessary — the Android
-app posts raw SMS itself). Fields: `trx_id`, `amount`, `sender?`, `fee?`,
-`balance?`, `received_at` (ISO 8601), `device_id?`, `raw_message?`.
-
 ---
 
-## 3) Dashboard login & profile
+## Getting your API license
 
-### `POST /api/v1/auth/login`
+1. Sign in to the PayPilot merchant dashboard.  
+2. Open **Authorization**.  
+3. Copy **API license** (not the mobile App license).  
+4. Set it as `PAYPILOT_API_LICENSE` on your server only.
 
-Merchant/owner web login. Response: `data.token` (JWT), `data.role`
-(`owner|user`), `data.user`.
-
-```json
-{ "username": "shopuser", "password": "••••••" }
-```
-
-### `GET /api/v1/auth/me`
-
-Current session profile: `id`, `username`, `name`, `role`, `avatar_url`.
-
-### `POST /api/v1/auth/change-password`
-
-`{ "current_password": "...", "new_password": "..." }` (min 6 characters).
-
-### `PATCH /api/v1/auth/profile`
-
-Merchant self-service profile update:
-
-```json
-{
-  "avatar_url": "https://example.com/logo.png",
-  "business_name": "My Shop",
-  "name": "Shop Account Name"
-}
-```
-
-- `avatar_url` = the **business logo shown inside the Android app** (the app
-  downloads and caches the image).
-- `business_name` = the title of the merchant card inside the app.
-- Send `""` to clear a field.
-
----
-
-## 4) Device (Android app) endpoints
-
-Used by the official app; open to custom integrations too.
-
-### `POST /api/v1/device/license/verify`
-
-App activation + profile sync. Response includes `valid`, `user_name`,
-`username`, `email`, `business_name`, `logo_url` — these drive the app's
-merchant card and logo. Since **v1.7.0** the response also carries
-`wallets[]` — every **active** wallet of the merchant with `id`, `name`,
-`provider`, `logo_url` and `number` (the receiver SIM). The app renders one
-card per wallet and matches each wallet's number against the phone's SIMs to
-auto-detect the slot; the same number on multiple wallets is returned as-is.
-
-```json
-{
-  "license_key": "<LICENSE>",
-  "device_id": "<stable-uuid>",
-  "device_name": "Samsung SM-A156E",
-  "app_version": "1.2.3"
-}
-```
-
-```json
-{
-  "success": true,
-  "data": {
-    "valid": true,
-    "user_name": "Shop Account",
-    "username": "shopuser",
-    "email": "shop@example.com",
-    "business_name": "My Shop",
-    "logo_url": "https://example.com/logo.png",
-    "wallets": [
-      { "id": "…", "name": "Main bKash", "provider": "bkash",
-        "logo_url": "https://example.com/bkash.png", "number": "017XXXXXXXX" },
-      { "id": "…", "name": "Nagad desk", "provider": "nagad",
-        "logo_url": null, "number": "018XXXXXXXX" }
-    ]
-  }
-}
-```
-
-### `POST /api/v1/device/ping` / `GET /api/v1/device/ping?k=&d=`
-
-Heartbeat (every 5 seconds while monitoring). Compact response:
-`{ "ok": 1, "s": 1 }`.
-
-### `POST /api/v1/device/sms`
-
-Upload an incoming SMS — the server parses bKash messages itself, matches the
-receiver SIM against the merchant's wallets, stores the transaction and assigns
-a category (`pending | claimed | otp | unwanted | attack`). Fields:
-`device_id`, `sms_id`, `address?`, `body`, `received_at`, `sim_slot?`,
-`receiver_number?`.
-
----
-
-## 5) Merchant portal (own data)
-
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/api/v1/portal/stats` | Transaction / available / used / SMS / device counters |
-| GET | `/api/v1/portal/notifications?category=&app_id=` | Own SMS feed |
-| GET | `/api/v1/portal/devices` | Own devices (online = heartbeat within 2 minutes) |
-| GET | `/api/v1/portal/apps` | List wallets (receiver SIMs) |
-| POST | `/api/v1/portal/apps` | Add wallet — `{ name, provider: "bkash"|"nagad", wallet_number, logo_url?, allowed_senders? }` |
-| PATCH | `/api/v1/portal/apps/{id}` | Edit wallet / `status: active\|disabled` |
-| DELETE | `/api/v1/portal/apps/{id}` | Delete wallet |
-
-> `wallet_number` must be the number of the SIM that receives the payment SMS.
-> `logo_url` (optional, since v1.7.0) is a small image URL — the Android app
-> downloads and caches it and shows it on the wallet card. `allowed_senders`
-> accepts a comma-separated payer whitelist (empty = any payer); payments from
-> unknown senders are categorised as `attack`.
-
----
-
-## 6) Owner endpoints
-
-These power the **official owner web dashboard** and require an owner token —
-not intended for third-party use. In short:
-
-- `GET /api/v1/admin/stats` · `GET|POST|PATCH|DELETE /api/v1/admin/users…`
-- `GET /api/v1/admin/users/{id}/license` · `POST /api/v1/admin/users/{id}/token` (regenerate license)
-- `POST /api/v1/admin/users/{id}/apps` · `PATCH|DELETE /api/v1/admin/apps/{id}` (merchant wallet management)
-- `GET /api/v1/admin/transactions` · `GET /api/v1/admin/notifications` · `GET /api/v1/admin/devices` · `GET /api/v1/admin/audit`
-
----
-
-## Getting a license key
-
-1. The PayPilot owner creates your merchant account — you receive a
-   **username + password** (web dashboard) and a **license key** (app + API).
-2. Activate the Android app with the license key and/or configure it on your
-   website's server.
-3. If the key ever leaks, contact the owner immediately — regenerating it
-   revokes the old key instantly.
-
-**Contact:** [github.com/A2MBD3](https://github.com/A2MBD3) · [a2mbd3.pages.dev](https://a2mbd3.pages.dev)
-
-> 💡 Want a license? See [docs/License.md](docs/License.md) for the full
-> license description and application steps.
+Support / license issues: use the contact channels on the main [README](../README.md).

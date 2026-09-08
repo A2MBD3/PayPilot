@@ -1,56 +1,51 @@
-# PayPilot API — v1
+# PayPilot পেমেন্ট ভেরিফিকেশন API
 
-> **PayPilot REST API** দিয়ে আপনি শুধু ড্যাশবোর্ডের মেসেজ দেখতে পারবেন না —
-> আপনার **ক্লায়েন্টের ওয়েবসাইট থেকেও ট্রানজেকশন আইডি দিয়ে লেনদেন যাচাই** করা যায়।
-> English version of this document: [`docs/API.md`](API.md) · বাংলা: [`docs/API.bn.md`](API.bn.md)
+> **শুধু সার্ভার-টু-সার্ভার।** কাস্টমার TrxID দিলে আপনার **প্রাইভেট ব্যাকএন্ড** থেকে এই API কল করুন।  
+> API লাইসেন্স ব্রাউজার, পাবলিক অ্যাপ বা পাবলিক রিপোতে রাখবেন না।  
+> English: [`docs/API.md`](API.md)
 
-- **Base URL:** `https://paypilot-5p9t.onrender.com`
-- **Format:** JSON request/response, UTF-8
-- **Auth:** `Authorization: Bearer <token>` (license key / web token / owner token)
-- **Rate limit:** general API **300 req/min** · device routes **600 req/min** · login **30 req/15 min**
+| | |
+|--|--|
+| **Base URL** | `https://paypilot-5p9t.onrender.com` |
+| **Endpoint** | `POST /api/v1/verify` |
+| **Auth** | `Authorization: Bearer <API_LICENSE>` |
+| **Content-Type** | `application/json` |
+| **রেট লিমিট** | প্রায় ৩০০ রিকোয়েস্ট / মিনিট |
 
----
-
-## রেসপন্স এনভেলপ
-
-সফল কল:
-
-```json
-{ "success": true, "message": "...", "data": { } }
-```
-
-ব্যর্থ কল:
-
-```json
-{ "success": false, "code": "NOT_FOUND", "message": "Transaction not found" }
-```
-
-| HTTP | Code | অর্থ |
-|------|------|------|
-| 400 | `VALIDATION_ERROR` | ইনপুট ফরম্যাট ভুল |
-| 401 | `UNAUTHORIZED` | টোকেন নেই / অবৈধ / মেয়াদোত্তীর্ণ |
-| 401 | `TOKEN_REVOKED` | লাইসেন্স রিজেনারেট করা হয়েছে — পুরোনো টোকেন বাতিল |
-| 403 | `DISABLED` | মার্চেন্ট অ্যাকাউন্ট সাসপেন্ডেড |
-| 401 | `INVALID_CREDENTIALS` | ইউজারনেম/পাসওয়ার্ড ভুল |
-| 404 | `NOT_FOUND` | রিসোর্স পাওয়া যায়নি |
-| 429 | `RATE_LIMITED` | অনেক বেশি রিকোয়েস্ট |
-| 500 | `INTERNAL_ERROR` | সার্ভার ত্রুটি |
+**API license** মার্চেন্ট ড্যাশবোর্ড → **Authorization → API license** থেকে পাবেন।  
+নতুন করে জেনারেট করলে পুরনো কী তাৎক্ষণিক বাতিল।
 
 ---
 
-## ১) ট্রানজেকশন যাচাই (ওয়েবসাইট ইন্টিগ্রেশনের মূল API)
+## ফ্লো
 
-### `POST /api/v1/verify`
+```
+কাস্টমার bKash (পার্সোনাল) দিয়ে পেমেন্ট করে
+        ↓
+সাইটে TrxID (ঐচ্ছিক amount) দেয়
+        ↓
+আপনার প্রাইভেট সার্ভার  ──POST /api/v1/verify──►  PayPilot
+        ↓
+PayPilot পেমেন্ট একবারের জন্য claim করে
+        ↓
+আপনার সার্ভার অর্ডার ডেলিভার করে
+```
 
-একটি **TrxID দিয়ে পেমেন্ট যাচাই** করে। এটি **এককালীন দাবি (one-time claim)** —
-সফল যাচাইয়ের পর লেনদেনটি `used` হয়ে যায় এবং **আর কখনো দ্বিতীয়বার যাচাই করা যায় না**
-(রিপ্লে/ডুপ্লিকেট অর্ডার ঠেকাতে)। শুধু পড়ার জন্য `GET /api/v1/transactions/{trxId}` ব্যবহার করুন।
+- সফল ভেরিফাই = **একবারের claim** (`used` / `claimed`)।
+- একই `trx_id` আবার যাচাই করা যাবে না (`ALREADY_USED`)।
+- `amount` দিলে SMS-এর অঙ্কের সাথে মিলতে হবে।
+- `max_age_minutes` ডিফল্ট **৬০**; পুরনো হলে `EXPIRED`।
 
-**Auth:** মার্চেন্টের লাইসেন্স কী (Bearer)
+---
 
-**রিকোয়েস্ট**
+## রিকোয়েস্ট
 
-```json
+```http
+POST /api/v1/verify HTTP/1.1
+Host: paypilot-5p9t.onrender.com
+Authorization: Bearer <API_LICENSE>
+Content-Type: application/json
+
 {
   "trx_id": "DI739OTDF3",
   "amount": 100.00,
@@ -59,14 +54,16 @@
 }
 ```
 
-| ফিল্ড | ধরন | বাধ্যতামূলক | বর্ণনা |
-|-------|-----|-------------|--------|
-| `trx_id` | string (5–30) | ✅ | bKash SMS-এর TrxID |
-| `amount` | number > 0 | ❌ | দিলে সার্ভার টাকার অঙ্ক মিলিয়ে দেখবে (±0.001) |
-| `order_id` | string ≤ 100 | ❌ | আপনার অর্ডার আইডি — লেনদেনের সাথে সংরক্ষিত হয় |
-| `max_age_minutes` | int 1–1440 | ❌ | ডিফল্ট ৬০ মিনিট; এর পুরোনো লেনদেন `EXPIRED` |
+| ফিল্ড | টাইপ | আবশ্যক | বর্ণনা |
+|-------|------|--------|--------|
+| `trx_id` | string (৫–৩০) | **হ্যাঁ** | কাস্টমারের bKash SMS-এর TrxID |
+| `amount` | number > 0 | না | দিলে সার্ভারে মিলিয়ে নেয় (±০.০০১) |
+| `order_id` | string ≤ ১০০ | না | আপনার অর্ডার রেফারেন্স |
+| `max_age_minutes` | int ১–১৪৪০ | না | ডিফল্ট `৬০` |
 
-**সফল রেসপন্স `200`**
+---
+
+## সফল রেসপন্স (`200`)
 
 ```json
 {
@@ -79,7 +76,7 @@
     "sender": "01722858922",
     "status": "used",
     "category": "claimed",
-    "app": "My Shop bKash",
+    "app": "bKash",
     "received_at": "2026-09-08T16:32:00.000Z",
     "used_at": "2026-09-08T16:40:12.480Z",
     "order_id": "ORDER-1024"
@@ -87,235 +84,159 @@
 }
 ```
 
-**ব্যর্থতার কোড (HTTP 400):**
+`app` শুধু তথ্য — ক্লায়েন্ট থেকে পাঠাবেন না।  
+অর্ডার তখনই সম্পন্ন করুন যখন `success === true` এবং `code === "VERIFIED"`।
 
-| Code | অর্থ |
-|------|------|
-| `NOT_FOUND` | এই TrxID-এর লেনদেন নেই (এই মার্চেন্টের জন্য) |
-| `ALREADY_USED` | আগেই যাচাই হয়েছে — **পুনরায় ব্যবহার নিষেধ** |
-| `ATTACK` | সেন্ডার/রিসিভার মিলেনি — সন্দেহজনক বার্তা |
-| `EXPIRED` | `max_age_minutes` সময়সীমা পেরিয়েছে |
-| `AMOUNT_MISMATCH` | অঙ্ক মেলেনি (মেসেজে প্রত্যাশিত অঙ্ক দেখানো হয়) |
+---
 
-**⚠️ নিরাপত্তা নিয়ম**
+## এরর
 
-- লাইসেন্স কী **কখনো ব্রাউজার/অ্যাপ-ক্লায়েন্টে রাখবেন না** — শুধু আপনার সার্ভার-সাইড কোডে রাখুন।
-- যাচাই **আপনার সাইটের পেমেন্ট-কলব্যাক/সার্ভার থেকে** করুন, ইউজারের ব্রাউজার থেকে নয়।
-- `amount` সবসময় পাঠান — ভুল অঙ্কের পেমেন্ট স্বয়ংক্রিয়ভাবে বাতিল হবে।
+```json
+{ "success": false, "code": "NOT_FOUND", "message": "Transaction not found" }
+```
 
-**উদাহরণ**
+| HTTP | `code` | অর্থ |
+|------|--------|------|
+| 400 | `VALIDATION_ERROR` | ভুল/অসম্পূর্ণ ইনপুট |
+| 400 | `NOT_FOUND` | এই মার্চেন্টের অধীনে TrxID নেই |
+| 400 | `AMOUNT_MISMATCH` | অঙ্ক মিলেনি |
+| 400 | `ALREADY_USED` | আগেই claim হয়েছে |
+| 400 | `EXPIRED` | সময়সীমা পেরিয়েছে |
+| 400 | `ATTACK` | সন্দেহজনক — ডেলিভার করবেন না |
+| 401 | `UNAUTHORIZED` | API license ভুল/নেই |
+| 401 | `TOKEN_REVOKED` | লাইসেন্স regenerate হয়েছে |
+| 403 | `DISABLED` | অ্যাকাউন্ট বন্ধ |
+| 429 | `RATE_LIMITED` | অতিরিক্ত রিকোয়েস্ট |
 
-cURL:
+---
+
+## সিকিউরিটি চেকলিস্ট
+
+1. শুধু **প্রাইভেট সার্ভার** থেকে কল করুন।  
+2. `API_LICENSE` এনভায়রনমেন্ট/সিক্রেটে রাখুন।  
+3. ব্রাউজার বা পাবলিক ক্লায়েন্টে লাইসেন্স দেবেন না।  
+4. সম্ভব হলে `trx_id` + `amount` একসাথে পাঠান।  
+5. `ALREADY_USED` এ আবার প্রোডাক্ট দেবেন না (নিজের অর্ডার লগ চেক করুন)।  
+6. `ATTACK` / `EXPIRED` = পেমেন্ট ব্যর্থ।
+
+---
+
+## কোড ডেমো
+
+`PAYPILOT_API_LICENSE` এনভ ভ্যারিয়েবলে API license সেট করুন।
+
+### cURL
 
 ```bash
-curl -X POST https://paypilot-5p9t.onrender.com/api/v1/verify \
-  -H "Authorization: Bearer $PAYPILOT_LICENSE" \
-  -H "Content-Type: application/json" \
-  -d '{"trx_id":"DI739OTDF3","amount":100.00,"order_id":"ORDER-1024"}'
+curl -sS -X POST 'https://paypilot-5p9t.onrender.com/api/v1/verify' \
+  -H "Authorization: Bearer ${PAYPILOT_API_LICENSE}" \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "trx_id": "DI739OTDF3",
+    "amount": 100.00,
+    "order_id": "ORDER-1024",
+    "max_age_minutes": 60
+  }'
 ```
 
-Node.js:
+### Node.js
 
 ```js
-const res = await fetch('https://paypilot-5p9t.onrender.com/api/v1/verify', {
-  method: 'POST',
-  headers: {
-    'Authorization': `Bearer ${process.env.PAYPILOT_LICENSE}`,
-    'Content-Type': 'application/json',
-  },
-  body: JSON.stringify({ trx_id, amount: 100.0, order_id }),
-});
-const { success, code, data } = await res.json();
-if (success && code === 'VERIFIED') {
-  // order_id ডেলিভারি চালু করুন — একবারই সফল হবে
+async function verifyPayment({ trxId, amount, orderId }) {
+  const res = await fetch('https://paypilot-5p9t.onrender.com/api/v1/verify', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${process.env.PAYPILOT_API_LICENSE}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      trx_id: trxId,
+      amount,
+      order_id: orderId,
+      max_age_minutes: 60,
+    }),
+  });
+  const body = await res.json();
+  if (!body.success || body.code !== 'VERIFIED') {
+    throw new Error(body.message || body.code || 'verify failed');
+  }
+  return body.data;
 }
 ```
 
-PHP:
+### PHP
 
 ```php
-$ch = curl_init('https://paypilot-5p9t.onrender.com/api/v1/verify');
-curl_setopt_array($ch, [
-  CURLOPT_POST => true,
-  CURLOPT_RETURNTRANSFER => true,
-  CURLOPT_HTTPHEADER => [
-    'Authorization: Bearer ' . getenv('PAYPILOT_LICENSE'),
-    'Content-Type: application/json',
-  ],
-  CURLOPT_POSTFIELDS => json_encode([
-    'trx_id' => $trxId, 'amount' => 100.00, 'order_id' => $orderId,
-  ]),
-]);
-$result = json_decode(curl_exec($ch), true);
-```
+<?php
+function paypilot_verify(string $trxId, ?float $amount = null, ?string $orderId = null): array {
+    $payload = ['trx_id' => $trxId, 'max_age_minutes' => 60];
+    if ($amount !== null) $payload['amount'] = $amount;
+    if ($orderId !== null) $payload['order_id'] = $orderId;
 
----
-
-## ২) লেনদেন পড়া (read-only)
-
-### `GET /api/v1/transactions/{trxId}`
-
-এককালীন দাবি ছাড়াই লেনদেনের বর্তমান অবস্থা দেখায় (ফি, স্ট্যাটাস, `order_id`)।
-
-```json
-{
-  "success": true,
-  "data": {
-    "trx_id": "DI739OTDF3",
-    "amount": 100.0,
-    "sender": "01722858922",
-    "fee": 0.0,
-    "status": "available",
-    "received_at": "2026-09-08T16:32:00.000Z",
-    "used_at": null,
-    "order_id": null
-  }
+    $ch = curl_init('https://paypilot-5p9t.onrender.com/api/v1/verify');
+    curl_setopt_array($ch, [
+        CURLOPT_POST => true,
+        CURLOPT_HTTPHEADER => [
+            'Authorization: Bearer ' . getenv('PAYPILOT_API_LICENSE'),
+            'Content-Type: application/json',
+        ],
+        CURLOPT_POSTFIELDS => json_encode($payload),
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT => 20,
+    ]);
+    $raw = curl_exec($ch);
+    if ($raw === false) throw new RuntimeException(curl_error($ch));
+    $body = json_decode($raw, true);
+    if (!($body['success'] ?? false) || ($body['code'] ?? '') !== 'VERIFIED') {
+        throw new RuntimeException($body['message'] ?? 'verify failed');
+    }
+    return $body['data'];
 }
 ```
 
-### `GET /api/v1/transactions?status=&limit=&offset=`
+### Python
 
-নিজের সব লেনদেনের তালিকা (`status`: `available|used|expired|attack`, `limit` ≤ 100, ডিফল্ট ৫০)।
+```python
+import os
+import requests
 
-```json
-{ "success": true, "data": { "total": 128, "items": [ ... ] } }
+def verify_payment(trx_id: str, amount: float | None = None, order_id: str | None = None) -> dict:
+    payload = {"trx_id": trx_id, "max_age_minutes": 60}
+    if amount is not None:
+        payload["amount"] = amount
+    if order_id is not None:
+        payload["order_id"] = order_id
+    r = requests.post(
+        "https://paypilot-5p9t.onrender.com/api/v1/verify",
+        headers={
+            "Authorization": f"Bearer {os.environ['PAYPILOT_API_LICENSE']}",
+            "Content-Type": "application/json",
+        },
+        json=payload,
+        timeout=20,
+    )
+    body = r.json()
+    if not body.get("success") or body.get("code") != "VERIFIED":
+        raise RuntimeError(body.get("message") or body.get("code"))
+    return body["data"]
 ```
 
-### `POST /api/v1/sms/receive` *(অ্যাডভান্সড)*
+### Go
 
-নিজস্ব পার্সার থেকে সরাসরি লেনদেন ইনজেক্ট করতে (সাধারণত দরকার হয় না — অ্যাপ নিজেই পাঠায়)।
-ফিল্ড: `trx_id`, `amount`, `sender?`, `fee?`, `balance?`, `received_at` (ISO 8601), `device_id?`, `raw_message?`।
+```go
+// Same pattern as English docs/API.md — POST JSON with Bearer API license
+// Endpoint: https://paypilot-5p9t.onrender.com/api/v1/verify
+```
+
+সম্পূর্ণ Go/Java উদাহরণ: [docs/API.md](API.md)।
 
 ---
 
-## ৩) ড্যাশবোর্ড লগইন ও প্রোফাইল
+## API license কোথায় পাবেন
 
-### `POST /api/v1/auth/login`
+1. মার্চেন্ট ড্যাশবোর্ডে লগইন  
+2. **Authorization** ট্যাব  
+3. **API license** কপি করুন (মোবাইল App license নয়)  
+4. শুধু সার্ভার এনভে রাখুন: `PAYPILOT_API_LICENSE`
 
-মার্চেন্ট/মালিকের ওয়েব লগইন। রেসপন্সে `data.token` (JWT), `data.role` (`owner|user`), `data.user`।
-
-```json
-{ "username": "shopuser", "password": "••••••" }
-```
-
-### `GET /api/v1/auth/me`
-
-বর্তমান সেশনের প্রোফাইল: `id`, `username`, `name`, `role`, `avatar_url`।
-
-### `POST /api/v1/auth/change-password`
-
-`{ "current_password": "...", "new_password": "..." }` (নতুন পাসওয়ার্ড ন্যূনতম ৬ অক্ষর)।
-
-### `PATCH /api/v1/auth/profile`
-
-মার্চেন্ট নিজের প্রোফাইল আপডেট:
-
-```json
-{
-  "avatar_url": "https://example.com/logo.png",
-  "business_name": "My Shop",
-  "name": "Shop Account Name"
-}
-```
-
-- `avatar_url` = অ্যাপের ড্যাশবোর্ডে দেখা **ব্যবসার লোগো** — অ্যাপ ছবিটি ডাউনলোড করে ক্যাশে রাখে।
-- `business_name` = অ্যাপের মার্চেন্ট কার্ডের শিরোনাম।
-- খালি স্ট্রিং `""` পাঠালে সেট মুছে যায়।
-
----
-
-## ৪) অ্যাপ (ডিভাইস) এন্ডপয়েন্ট
-
-এগুলো PayPilot Android অ্যাপ ব্যবহার করে; নিজস্ব ইন্টিগ্রেশনের জন্যও খোলা।
-
-### `POST /api/v1/device/license/verify`
-
-অ্যাপ অ্যাক্টিভেশন + প্রোফাইল সিঙ্ক। রেসপন্সে `valid`, `user_name`, `username`, `email`,
-`business_name`, `logo_url` — অ্যাপ এগুলো থেকেই ড্যাশবোর্ড কার্ড ও লোগো দেখায়।
-**v1.7.0 থেকে** রেসপন্সে `wallets[]` অ্যারেও আসে — মার্চেন্টের প্রতিটি **অ্যাক্টিভ**
-ওয়ালেটের `id`, `name`, `provider`, `logo_url` ও `number` (রিসিভার সিম)। অ্যাপ
-প্রতিটি ওয়ালেটের জন্য আলাদা কার্ড দেখায় এবং ওয়ালেট নম্বরের সাথে ফোনের সিম মিলিয়ে
-স্লট অটো-ডিটেক্ট করে; একই নম্বর একাধিক ওয়ালেটে থাকলেও সবগুলো আসবে।
-
-```json
-{
-  "license_key": "<LICENSE>",
-  "device_id": "<stable-uuid>",
-  "device_name": "Samsung SM-A156E",
-  "app_version": "1.2.3"
-}
-```
-
-```json
-{
-  "success": true,
-  "data": {
-    "valid": true,
-    "user_name": "Shop Account",
-    "username": "shopuser",
-    "email": "shop@example.com",
-    "business_name": "My Shop",
-    "logo_url": "https://example.com/logo.png",
-    "wallets": [
-      { "id": "…", "name": "Main bKash", "provider": "bkash",
-        "logo_url": "https://example.com/bkash.png", "number": "017XXXXXXXX" },
-      { "id": "…", "name": "Nagad desk", "provider": "nagad",
-        "logo_url": null, "number": "018XXXXXXXX" }
-    ]
-  }
-}
-```
-
-### `POST /api/v1/device/ping` / `GET /api/v1/device/ping?k=&d=`
-
-হার্টবিট (৫ সেকেন্ড পরপর)। কমপ্যাক্ট রেসপন্স: `{ "ok": 1, "s": 1 }`।
-
-### `POST /api/v1/device/sms`
-
-ইনকামিং SMS আপলোড — সার্ভার নিজেই bKash বার্তা পার্স করে, ওয়ালেট-নম্বর (রিসিভার সিম) মিলিয়ে
-লেনদেন তৈরি করে এবং ক্যাটাগরি দেয় (`pending | claimed | otp | unwanted | attack`)।
-ফিল্ড: `device_id`, `sms_id`, `address?`, `body`, `received_at`, `sim_slot?`, `receiver_number?`।
-
----
-
-## ৫) মার্চেন্ট পোর্টাল (নিজের ডেটা)
-
-| Method | Path | বর্ণনা |
-|--------|------|--------|
-| GET | `/api/v1/portal/stats` | লেনদেন/available/used/SMS/ডিভাইস কাউন্টার |
-| GET | `/api/v1/portal/notifications?category=&app_id=` | নিজের SMS ফিড |
-| GET | `/api/v1/portal/devices` | নিজের অ্যাক্টিভ ডিভাইস (online = ২ মিনিটে হার্টবিট) |
-| GET | `/api/v1/portal/apps` | ওয়ালেট (receiver SIM) তালিকা |
-| POST | `/api/v1/portal/apps` | ওয়ালেট যোগ — `{ name, provider: "bkash"|"nagad", wallet_number, logo_url?, allowed_senders? }` |
-| PATCH | `/api/v1/portal/apps/{id}` | ওয়ালেট এডিট / `status: active\|disabled` |
-| DELETE | `/api/v1/portal/apps/{id}` | ওয়ালেট ডিলিট |
-
-> `wallet_number` অবশ্যই সেই সিমের নম্বর হতে হবে যেখানে পেমেন্ট SMS আসে।
-> `logo_url` (ঐচ্ছিক, v1.7.0 থেকে) — ছোট একটি ইমেজ URL; অ্যাপ এটি ডাউনলোড করে
-> ক্যাশ রেখে ওয়ালেট কার্ডে দেখায়। `allowed_senders`-এ কমা দিয়ে পেয়ার-নম্বর দিলে শুধু সেই পেয়ারদের পেমেন্ট গৃহীত হবে
-> (খালি = যেকোনো পেয়ার)। হোয়াইটলিস্টের বাইরের পেমেন্ট `attack` ক্যাটাগরিতে যায়।
-
----
-
-## ৬) মালিক (Owner) এন্ডপয়েন্ট
-
-এগুলো **অফিসিয়াল ওয়েব ড্যাশবোর্ডের জন্য** — owner টোকেন লাগে। থার্ড-পার্টি ব্যবহারের
-জন্য নয়; সম্পূর্ণ তালিকা প্রয়োজনে সাপোর্টে চাইুন। সংক্ষেপে:
-
-- `GET /api/v1/admin/stats` · `GET|POST|PATCH|DELETE /api/v1/admin/users…`
-- `GET /api/v1/admin/users/{id}/license` · `POST /api/v1/admin/users/{id}/token` (লাইসেন্স রিজেনারেট)
-- `POST /api/v1/admin/users/{id}/apps` · `PATCH|DELETE /api/v1/admin/apps/{id}` (মার্চেন্টের ওয়ালেট ম্যানেজমেন্ট)
-- `GET /api/v1/admin/transactions` · `GET /api/v1/admin/notifications` · `GET /api/v1/admin/devices` · `GET /api/v1/admin/audit`
-
----
-
-## লাইসেন্স কী কীভাবে পাবেন
-
-1. PayPilot মালিক আপনার জন্য মার্চেন্ট অ্যাকাউন্ট তৈরি করবে — পাবেন **username + password** (ওয়েব লগইন) এবং **লাইসেন্স কী** (অ্যাপ + API)।
-2. লাইসেন্স কী দিয়ে Android অ্যাপ অ্যাক্টিভেট করুন এবং/অথবা আপনার ওয়েবসাইটের সার্ভারে কনফিগ করুন।
-3. কী লিক হলে সাথে সাথে মালিককে জানান — রিজেনারেট করলে পুরোনো কী সাথে সাথে বাতিল হয়ে যায়।
-
-**যোগাযোগ:** [github.com/A2MBD3](https://github.com/A2MBD3) · [a2mbd3.pages.dev](https://a2mbd3.pages.dev)
-
-> 💡 লাইসেন্স চান? সম্পূর্ণ লাইসেন্স বিবরণ ও আবেদনের নিয়ম দেখুন
-> [docs/License.md](docs/License.md)।
+যোগাযোগ: মূল [README.bn.md](../README.bn.md)।
