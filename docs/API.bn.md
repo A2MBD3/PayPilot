@@ -232,13 +232,37 @@ $result = json_decode(curl_exec($ch), true);
 
 অ্যাপ অ্যাক্টিভেশন + প্রোফাইল সিঙ্ক। রেসপন্সে `valid`, `user_name`, `username`, `email`,
 `business_name`, `logo_url` — অ্যাপ এগুলো থেকেই ড্যাশবোর্ড কার্ড ও লোগো দেখায়।
+**v1.7.0 থেকে** রেসপন্সে `wallets[]` অ্যারেও আসে — মার্চেন্টের প্রতিটি **অ্যাক্টিভ**
+ওয়ালেটের `id`, `name`, `provider`, `logo_url` ও `number` (রিসিভার সিম)। অ্যাপ
+প্রতিটি ওয়ালেটের জন্য আলাদা কার্ড দেখায় এবং ওয়ালেট নম্বরের সাথে ফোনের সিম মিলিয়ে
+স্লট অটো-ডিটেক্ট করে; একই নম্বর একাধিক ওয়ালেটে থাকলেও সবগুলো আসবে।
 
 ```json
 {
   "license_key": "<LICENSE>",
   "device_id": "<stable-uuid>",
   "device_name": "Samsung SM-A156E",
-  "app_version": "1.2.2"
+  "app_version": "1.2.3"
+}
+```
+
+```json
+{
+  "success": true,
+  "data": {
+    "valid": true,
+    "user_name": "Shop Account",
+    "username": "shopuser",
+    "email": "shop@example.com",
+    "business_name": "My Shop",
+    "logo_url": "https://example.com/logo.png",
+    "wallets": [
+      { "id": "…", "name": "Main bKash", "provider": "bkash",
+        "logo_url": "https://example.com/bkash.png", "number": "017XXXXXXXX" },
+      { "id": "…", "name": "Nagad desk", "provider": "nagad",
+        "logo_url": null, "number": "018XXXXXXXX" }
+    ]
+  }
 }
 ```
 
@@ -262,12 +286,13 @@ $result = json_decode(curl_exec($ch), true);
 | GET | `/api/v1/portal/notifications?category=&app_id=` | নিজের SMS ফিড |
 | GET | `/api/v1/portal/devices` | নিজের অ্যাক্টিভ ডিভাইস (online = ২ মিনিটে হার্টবিট) |
 | GET | `/api/v1/portal/apps` | ওয়ালেট (receiver SIM) তালিকা |
-| POST | `/api/v1/portal/apps` | ওয়ালেট যোগ — `{ name, provider: "bkash"|"nagad", wallet_number, allowed_senders? }` |
+| POST | `/api/v1/portal/apps` | ওয়ালেট যোগ — `{ name, provider: "bkash"|"nagad", wallet_number, logo_url?, allowed_senders? }` |
 | PATCH | `/api/v1/portal/apps/{id}` | ওয়ালেট এডিট / `status: active\|disabled` |
 | DELETE | `/api/v1/portal/apps/{id}` | ওয়ালেট ডিলিট |
 
 > `wallet_number` অবশ্যই সেই সিমের নম্বর হতে হবে যেখানে পেমেন্ট SMS আসে।
-> `allowed_senders`-এ কমা দিয়ে পেয়ার-নম্বর দিলে শুধু সেই পেয়ারদের পেমেন্ট গৃহীত হবে
+> `logo_url` (ঐচ্ছিক, v1.7.0 থেকে) — ছোট একটি ইমেজ URL; অ্যাপ এটি ডাউনলোড করে
+> ক্যাশ রেখে ওয়ালেট কার্ডে দেখায়। `allowed_senders`-এ কমা দিয়ে পেয়ার-নম্বর দিলে শুধু সেই পেয়ারদের পেমেন্ট গৃহীত হবে
 > (খালি = যেকোনো পেয়ার)। হোয়াইটলিস্টের বাইরের পেমেন্ট `attack` ক্যাটাগরিতে যায়।
 
 ---
@@ -291,3 +316,6 @@ $result = json_decode(curl_exec($ch), true);
 3. কী লিক হলে সাথে সাথে মালিককে জানান — রিজেনারেট করলে পুরোনো কী সাথে সাথে বাতিল হয়ে যায়।
 
 **যোগাযোগ:** [github.com/A2MBD3](https://github.com/A2MBD3) · [a2mbd3.pages.dev](https://a2mbd3.pages.dev)
+
+> 💡 লাইসেন্স চান? সম্পূর্ণ লাইসেন্স বিবরণ ও আবেদনের নিয়ম দেখুন
+> [docs/License.md](docs/License.md)।

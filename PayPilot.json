@@ -1,10 +1,10 @@
 {
-  "version": "1.2.2",
-  "versionCode": 5,
+  "version": "1.2.3",
+  "versionCode": 6,
   "updateType": "optional",
-  "changelog": "v1.2.2 — নতুন প্যাকেজ (com.a2mbd3.paypilot), প্রোফাইল লাইভ সিঙ্ক (লোগো/ব্যবসার নাম), UI উন্নতি। নতুন অ্যাপ ইনস্টল করে আগের অ্যাপটি আনইনস্টল করুন — একই লাইসেন্স কাজ করবে। বিস্তারিত: Changelog.md",
+  "changelog": "v1.2.3 — ওয়ালেট কার্ড (নাম+লোগো+নম্বর), প্রতি ওয়ালেটে সিম স্লট অটো-ডিটেক্ট/ম্যানুয়াল, ডুয়াল সিম থেকে উভয় সিমের SMS সঠিকভাবে ফরওয়ার্ড, নতুন আপডেটে অ্যালার্ট ডায়ালগ, লাইসেন্স আবেদন বাটন। বিস্তারিত: Changelog.md",
   "changelogUrl": "https://raw.githubusercontent.com/A2MBD3/PayPilot/main/Changelog.md",
-  "apkUrl": "https://github.com/A2MBD3/PayPilot/releases/download/v1.2.2/PayPilot-v1.2.2.apk",
+  "apkUrl": "https://github.com/A2MBD3/PayPilot/releases/download/v1.2.3/PayPilot-v1.2.3.apk",
   "minUninstallFirst": false,
-  "notes": "package renamed: installs as a separate app; sign in with the same license key, then uninstall the old app"
+  "notes": "wallet cards with per-wallet SIM slot detection; update alert dialog; license application button"
 }

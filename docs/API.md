@@ -238,14 +238,38 @@ Used by the official app; open to custom integrations too.
 
 App activation + profile sync. Response includes `valid`, `user_name`,
 `username`, `email`, `business_name`, `logo_url` — these drive the app's
-merchant card and logo.
+merchant card and logo. Since **v1.7.0** the response also carries
+`wallets[]` — every **active** wallet of the merchant with `id`, `name`,
+`provider`, `logo_url` and `number` (the receiver SIM). The app renders one
+card per wallet and matches each wallet's number against the phone's SIMs to
+auto-detect the slot; the same number on multiple wallets is returned as-is.
 
 ```json
 {
   "license_key": "<LICENSE>",
   "device_id": "<stable-uuid>",
   "device_name": "Samsung SM-A156E",
-  "app_version": "1.2.2"
+  "app_version": "1.2.3"
+}
+```
+
+```json
+{
+  "success": true,
+  "data": {
+    "valid": true,
+    "user_name": "Shop Account",
+    "username": "shopuser",
+    "email": "shop@example.com",
+    "business_name": "My Shop",
+    "logo_url": "https://example.com/logo.png",
+    "wallets": [
+      { "id": "…", "name": "Main bKash", "provider": "bkash",
+        "logo_url": "https://example.com/bkash.png", "number": "017XXXXXXXX" },
+      { "id": "…", "name": "Nagad desk", "provider": "nagad",
+        "logo_url": null, "number": "018XXXXXXXX" }
+    ]
+  }
 }
 ```
 
@@ -272,13 +296,15 @@ a category (`pending | claimed | otp | unwanted | attack`). Fields:
 | GET | `/api/v1/portal/notifications?category=&app_id=` | Own SMS feed |
 | GET | `/api/v1/portal/devices` | Own devices (online = heartbeat within 2 minutes) |
 | GET | `/api/v1/portal/apps` | List wallets (receiver SIMs) |
-| POST | `/api/v1/portal/apps` | Add wallet — `{ name, provider: "bkash"|"nagad", wallet_number, allowed_senders? }` |
+| POST | `/api/v1/portal/apps` | Add wallet — `{ name, provider: "bkash"|"nagad", wallet_number, logo_url?, allowed_senders? }` |
 | PATCH | `/api/v1/portal/apps/{id}` | Edit wallet / `status: active\|disabled` |
 | DELETE | `/api/v1/portal/apps/{id}` | Delete wallet |
 
 > `wallet_number` must be the number of the SIM that receives the payment SMS.
-> `allowed_senders` accepts a comma-separated payer whitelist (empty = any
-> payer); payments from unknown senders are categorised as `attack`.
+> `logo_url` (optional, since v1.7.0) is a small image URL — the Android app
+> downloads and caches it and shows it on the wallet card. `allowed_senders`
+> accepts a comma-separated payer whitelist (empty = any payer); payments from
+> unknown senders are categorised as `attack`.
 
 ---
 
@@ -304,3 +330,6 @@ not intended for third-party use. In short:
    revokes the old key instantly.
 
 **Contact:** [github.com/A2MBD3](https://github.com/A2MBD3) · [a2mbd3.pages.dev](https://a2mbd3.pages.dev)
+
+> 💡 Want a license? See [docs/License.md](docs/License.md) for the full
+> license description and application steps.
