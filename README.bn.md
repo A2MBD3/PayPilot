@@ -10,9 +10,10 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/A2MBD3/PayPilot/releases/latest"><img src="https://img.shields.io/badge/%E0%A6%A1%E0%A6%BE%E0%A6%89%E0%A6%A8%E0%A6%B2%E0%A7%8B%E0%A6%A1-v1.2.1-10B981" alt="ডাউনলোড"/></a>
+  <a href="https://github.com/A2MBD3/PayPilot/releases/latest"><img src="https://img.shields.io/badge/%E0%A6%A1%E0%A6%BE%E0%A6%89%E0%A6%A8%E0%A6%B2%E0%A7%8B%E0%A6%A1-v1.2.2-10B981" alt="ডাউনলোড"/></a>
   <img src="https://img.shields.io/badge/Android-8.0%2B-3DDC84?logo=android&logoColor=white" alt="Android 8.0+"/>
   <img src="https://img.shields.io/badge/%E0%A6%B8%E0%A6%BE%E0%A6%87%E0%A6%9C-~2.5%20MB-blue" alt="APK সাইজ"/>
+  <a href="docs/API.bn.md"><img src="https://img.shields.io/badge/ডকুমেন্টেশন-API-2563EB" alt="API docs"/></a>
   <img src="https://img.shields.io/badge/%E0%A6%B2%E0%A6%BE%E0%A6%87%E0%A6%B8%E0%A6%A8%E0%A7%8D%E0%A6%B8-প্রোপ্রাইটরি-red" alt="লাইসেন্স"/>
 </p>
 
@@ -54,7 +55,8 @@
 ## 🚀 কীভাবে শুরু করবেন
 
 1. **লাইসেন্স নিন** — PayPilot প্রতি ডিভাইসে লাইসেন্স দিয়ে চালু হয়। লাইসেন্সের জন্য [ডেভেলপারের সাথে যোগাযোগ](#-যোগাযোগ-ও-সহায়তা) করুন।
-2. **APK ডাউনলোড করুন** — [Releases পেজ](https://github.com/A2MBD3/PayPilot/releases/latest) থেকে সর্বশেষ `PayPilot-v1.2.1.apk` নামান। PayPilot **শুধুমাত্র এই অফিশিয়াল রিপোজিটরি থেকেই** ডাউনলোড করুন।
+2. **APK ডাউনলোড করুন** — [Releases পেজ](https://github.com/A2MBD3/PayPilot/releases/latest) থেকে সর্বশেষ `PayPilot-v1.2.2.apk` নামান। PayPilot **শুধুমাত্র এই অফিশিয়াল রিপোজিটরি থেকেই** ডাউনলোড করুন।
+   > 📦 v1.2.2 থেকে অ্যাপের প্যাকেজ `com.a2mbd3.paypilot` — এটি পুরোনো অ্যাপের পাশাপাশি আলাদা অ্যাপ হিসেবে ইনস্টল হবে; একই লাইসেন্স কী দিয়ে সাইন-ইন করে পুরোনো অ্যাপটি আনইনস্টল করে দিন।
 3. **ইনস্টল করুন** — APK খুলুন; Android যখন জিজ্ঞেস করবে "অজানা অ্যাপ ইনস্টলের" অনুমতি দিন (Play Store-এর বাইরের অ্যাপের জন্য এটি স্বাভাবিক)।
 4. **শর্তাবলি মেনে নিন** — প্রথমবার খুললে শর্তাবলি পড়ে সম্মতি দিন।
 5. **অ্যাকটিভেট করুন** — লাইসেন্স কী পেস্ট করুন (পেস্ট বাটন আছে; ভুল লিখলে ফোন ঝাঁকিয়ে ঘরটি পরিষ্কার করুন), অ্যাপ নিরাপদ সংযোগে লাইসেন্স যাচাই করবে।
@@ -118,16 +120,32 @@ PayPilot Play Store-এর বদলে সরাসরি GitHub-এ বিত�
 Android 8.0 (Oreo) থেকে সর্বশেষ Android পর্যন্ত — নতুন ভার্সনগুলোর নোটিফিকেশন পারমিশনও স্বয়ংক্রিয়ভাবে সামলানো হয়।
 </details>
 
+## 🔌 পাবলিক API
+
+PayPilot শুধু ড্যাশবোর্ড নয় — ক্লায়েন্টের ওয়েবসাইট **TrxID দিয়ে সরাসরি bKash
+পেমেন্ট যাচাই** করতে পারে ছোট্ট একটি REST API দিয়ে। এককালীন দাবি, অঙ্ক মিলান,
+সময়সীমা ও রিপ্লে-প্রোটেকশন বিল্ট-ইন।
+
+📖 সম্পূর্ণ ডকুমেন্টেশন: **[docs/API.bn.md](docs/API.bn.md)** (বাংলা) · [docs/API.md](docs/API.md) (English)
+
+```bash
+curl -X POST https://paypilot-5p9t.onrender.com/api/v1/verify \
+  -H "Authorization: Bearer <LICENSE-KEY>" \
+  -H "Content-Type: application/json" \
+  -d '{"trx_id":"DI739OTDF3","amount":100.00,"order_id":"ORDER-1024"}'
+```
+
 ## 📥 ডাউনলোড
 
 | ভার্সন | তারিখ | ডাউনলোড |
 |---|---|---|
-| **v1.2.1** (সর্বশেষ) | ০৮-০৯-২০২৬ | [PayPilot-v1.2.1.apk](https://github.com/A2MBD3/PayPilot/releases/download/v1.2.1/PayPilot-v1.2.1.apk) — [রিলিজ নোট](https://github.com/A2MBD3/PayPilot/releases/tag/v1.2.1) |
-| v1.2.0 | ০৮-০৯-২০২৬ | বাতিল — স্টার্টআপ ক্র্যাশ ছিল, v1.2.1 ব্যবহার করুন |
+| **v1.2.2** (সর্বশেষ) | ০৮-০৯-২০২৬ | [PayPilot-v1.2.2.apk](https://github.com/A2MBD3/PayPilot/releases/download/v1.2.2/PayPilot-v1.2.2.apk) — [রিলিজ নোট](https://github.com/A2MBD3/PayPilot/releases/tag/v1.2.2) |
+| v1.2.1 | ০৮-০৯-২০২৬ | ক্র্যাশ-ফিক্স রিলিজ — v1.2.2 (নতুন প্যাকেজ) দ্বারা প্রতিস্থাপিত |
+| v1.2.0 | ০৮-০৯-২০২৬ | বাতিল — স্টার্টআপ ক্র্যাশ ছিল, v1.2.2 ব্যবহার করুন |
 
-> 🔐 APK SHA-256: `dd5b2c21df74cc6a381b53c196691754399cd069dea920d8707ee7e23c1e1c0e`
+> 🔐 APK SHA-256 (v1.2.2): `d880b52aa9ab3d79578ece2b92677f25247d50d1f153f083c655a11d47229e18`
 
-> ⚠️ **v1.2.0** থেকে? সরাসরি ইনস্টল করুন — আনইনস্টল লাগবে না। **v1.0.x** থেকে? আগে পুরনো ভার্সন আনইনস্টল করুন (v1.2.0-তে সার্টিফিকেট বদলেছে)।
+> ⚠️ **v1.2.2 নোট:** অ্যাপ প্যাকেজ এখন `com.a2mbd3.paypilot` — তাই আপডেটটি **আলাদা অ্যাপ** হিসেবে ইনস্টল হবে। আপনার আগের লাইসেন্স কী দিয়ে সাইন-ইন করে পুরোনো `com.teamcrx.paypilot` অ্যাপটি আনইনস্টল করে দিন। **v1.0.x** থেকে? আগে পুরনো ভার্সন আনইনস্টল করুন (v1.2.0-তে সার্টিফিকেট বদলেছে)।
 
 <details>
 <summary><b>আপডেট হিস্ট্রি</b></summary>

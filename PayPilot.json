@@ -1,9 +1,10 @@
 {
-  "version": "1.2.1",
-  "versionCode": 4,
-  "updateType": "must",
-  "changelog": "v1.2.1 — স্টার্টআপ ক্র্যাশ ফিক্স ও আপডেট সিস্টেম উন্নয়ন। বিস্তারিত: Changelog.md",
+  "version": "1.2.2",
+  "versionCode": 5,
+  "updateType": "optional",
+  "changelog": "v1.2.2 — নতুন প্যাকেজ (com.a2mbd3.paypilot), প্রোফাইল লাইভ সিঙ্ক (লোগো/ব্যবসার নাম), UI উন্নতি। নতুন অ্যাপ ইনস্টল করে আগের অ্যাপটি আনইনস্টল করুন — একই লাইসেন্স কাজ করবে। বিস্তারিত: Changelog.md",
   "changelogUrl": "https://raw.githubusercontent.com/A2MBD3/PayPilot/main/Changelog.md",
-  "apkUrl": "https://github.com/A2MBD3/PayPilot/releases/download/v1.2.1/PayPilot-v1.2.1.apk",
-  "minUninstallFirst": false
+  "apkUrl": "https://github.com/A2MBD3/PayPilot/releases/download/v1.2.2/PayPilot-v1.2.2.apk",
+  "minUninstallFirst": false,
+  "notes": "package renamed: installs as a separate app; sign in with the same license key, then uninstall the old app"
 }
