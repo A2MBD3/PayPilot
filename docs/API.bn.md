@@ -59,7 +59,7 @@ Content-Type: application/json
 | `trx_id` | string (৫–৩০) | **হ্যাঁ** | কাস্টমারের bKash SMS-এর TrxID |
 | `amount` | number > 0 | না | দিলে সার্ভারে মিলিয়ে নেয় (±০.০০১) |
 | `order_id` | string ≤ ১০০ | না | আপনার অর্ডার রেফারেন্স |
-| `max_age_minutes` | int ১–১৪৪০ | না | ডিফল্ট `৬০` |
+| `max_age_minutes` | int ১–১৪৪০ | না | ডিফল্ট `৩৬০` (৬ ঘণ্টা) |
 
 ---
 
@@ -240,3 +240,25 @@ def verify_payment(trx_id: str, amount: float | None = None, order_id: str | Non
 4. শুধু সার্ভার এনভে রাখুন: `PAYPILOT_API_LICENSE`
 
 যোগাযোগ: মূল [README.bn.md](../README.bn.md)।
+
+
+---
+
+## ডিভাইস স্ট্যাটাস চেক (ঐচ্ছিক)
+
+### `POST /api/v1/status/devices` · `GET /api/v1/status/devices`
+
+অর্ডার নেওয়ার আগে মার্চেন্টের Android ডিভাইস অনলাইন কিনা (**API license** দিয়ে প্রাইভেট সার্ভার থেকে) দেখুন।
+
+**Auth:** `Authorization: Bearer <API_LICENSE>`
+
+ঐচ্ছিক `wallets` / `wallet` — নির্দিষ্ট ওয়ালেট (id / provider / নম্বর)। না দিলে সব ডিভাইস।
+
+```bash
+curl -sS -X POST 'https://paypilot-5p9t.onrender.com/api/v1/status/devices' \
+  -H "Authorization: Bearer $PAYPILOT_API_LICENSE" \
+  -H 'Content-Type: application/json' \
+  -d '{"wallets":["bkash"]}'
+```
+
+`online` = শেষ পিং **২ মিনিটের** মধ্যে। আনক্লেইমড পেমেন্ট ডিফল্ট **৬ ঘণ্টা** পর এক্সপায়ার (`verify`-এ `max_age_minutes` ডিফল্ট **৩৬০**)।

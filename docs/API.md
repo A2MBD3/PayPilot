@@ -59,7 +59,7 @@ Content-Type: application/json
 | `trx_id` | string (5–30) | **Yes** | Transaction ID from the customer’s bKash SMS |
 | `amount` | number > 0 | No | If set, must match stored amount (±0.001) |
 | `order_id` | string ≤ 100 | No | Your order reference; stored on success |
-| `max_age_minutes` | int 1–1440 | No | Max age of the payment; default `60` |
+| `max_age_minutes` | int 1–1440 | No | Max age of the payment; default `360` (6 hours) |
 
 ---
 
@@ -339,3 +339,58 @@ public class PayPilotVerify {
 4. Set it as `PAYPILOT_API_LICENSE` on your server only.
 
 Support / license issues: use the contact channels on the main [README](../README.md).
+
+
+---
+
+## Device status check (optional readiness)
+
+### `POST /api/v1/status/devices` · `GET /api/v1/status/devices`
+
+Call from your **private server** with the **API license** to see if the merchant’s Android device is online (last ping) before accepting an order.
+
+**Auth:** `Authorization: Bearer <API_LICENSE>`
+
+**Body (POST) or query (GET)**
+
+| Field | Description |
+|-------|-------------|
+| `wallets` | Optional array of wallet id / provider / number |
+| `wallet` | Optional single value (POST) or `?wallet=bkash` (GET) |
+
+If omitted, **all devices** and **all active wallets** are returned. If set, wallets are filtered; devices linked to those wallets (recent payments) are preferred.
+
+**Example**
+
+```bash
+curl -sS -X POST 'https://paypilot-5p9t.onrender.com/api/v1/status/devices' \
+  -H "Authorization: Bearer $PAYPILOT_API_LICENSE" \
+  -H 'Content-Type: application/json' \
+  -d '{"wallets":["bkash"]}'
+```
+
+**Success**
+
+```json
+{
+  "success": true,
+  "data": {
+    "business_name": "My Shop",
+    "any_online": true,
+    "can_accept_payments": true,
+    "devices": [
+      {
+        "device_id": "...",
+        "device_name": "Pixel",
+        "last_seen_at": "2026-09-09T04:00:00.000Z",
+        "seconds_ago": 4,
+        "online": true
+      }
+    ],
+    "wallets": [{ "name": "bKash", "provider": "bkash", "wallet_number": "01..." }],
+    "checked_at": "..."
+  }
+}
+```
+
+`online` = last ping within **2 minutes**. Unclaimed payments expire after **6 hours** by default (`max_age_minutes` default **360** on verify).
