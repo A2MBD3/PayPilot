@@ -34,7 +34,7 @@ Your server fulfills the order
 - Verification is a **one-time claim**. A successful call sets status to `used` / `claimed`.
 - The same `trx_id` cannot be verified again (`ALREADY_USED`).
 - Optional `amount` must match the SMS amount when provided.
-- Optional `max_age_minutes` (default **60**) rejects older payments (`EXPIRED`).
+- Optional `max_age_minutes` (default **60**) rejects older payments (`TOO_OLD`).
 
 ---
 
@@ -110,7 +110,7 @@ Envelope:
 | 400 | `NOT_FOUND` | Unknown `trx_id` for this merchant |
 | 400 | `AMOUNT_MISMATCH` | `amount` does not match |
 | 400 | `ALREADY_USED` | Already verified / claimed |
-| 400 | `EXPIRED` | Older than `max_age_minutes` |
+| 400 | `TOO_OLD` | Older than `max_age_minutes` |
 | 400 | `ATTACK` | Flagged payment (do not fulfill) |
 | 401 | `UNAUTHORIZED` | Missing/invalid API license |
 | 401 | `TOKEN_REVOKED` | License was regenerated |
@@ -128,7 +128,7 @@ Only fulfill the order when `success === true` and `code === "VERIFIED"`.
 3. Never expose the license to the browser or a public client.
 4. Prefer sending both `trx_id` and `amount`.
 5. On `ALREADY_USED`, do not deliver the product again without your own order audit.
-6. Treat `ATTACK` / `EXPIRED` as payment failure.
+6. Treat `ATTACK` / `TOO_OLD` as payment failure.
 
 ---
 
@@ -393,4 +393,4 @@ curl -sS -X POST 'https://paypilot-5p9t.onrender.com/api/v1/status/devices' \
 }
 ```
 
-`online` = last ping within **2 minutes**. Unclaimed payments expire after **6 hours** by default (`max_age_minutes` default **360** on verify).
+`online` = last ping within **2 minutes**. Payments older than **6 hours** return `TOO_OLD` (manual review; not auto-expired) (`max_age_minutes` default **360** on verify).

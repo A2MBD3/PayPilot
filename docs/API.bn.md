@@ -34,7 +34,7 @@ PayPilot পেমেন্ট একবারের জন্য claim কর�
 - সফল ভেরিফাই = **একবারের claim** (`used` / `claimed`)।
 - একই `trx_id` আবার যাচাই করা যাবে না (`ALREADY_USED`)।
 - `amount` দিলে SMS-এর অঙ্কের সাথে মিলতে হবে।
-- `max_age_minutes` ডিফল্ট **৬০**; পুরনো হলে `EXPIRED`।
+- `max_age_minutes` ডিফল্ট **৬০**; পুরনো হলে `TOO_OLD`।
 
 ---
 
@@ -101,7 +101,7 @@ Content-Type: application/json
 | 400 | `NOT_FOUND` | এই মার্চেন্টের অধীনে TrxID নেই |
 | 400 | `AMOUNT_MISMATCH` | অঙ্ক মিলেনি |
 | 400 | `ALREADY_USED` | আগেই claim হয়েছে |
-| 400 | `EXPIRED` | সময়সীমা পেরিয়েছে |
+| 400 | `TOO_OLD` | সময়সীমা পেরিয়েছে |
 | 400 | `ATTACK` | সন্দেহজনক — ডেলিভার করবেন না |
 | 401 | `UNAUTHORIZED` | API license ভুল/নেই |
 | 401 | `TOKEN_REVOKED` | লাইসেন্স regenerate হয়েছে |
@@ -117,7 +117,7 @@ Content-Type: application/json
 3. ব্রাউজার বা পাবলিক ক্লায়েন্টে লাইসেন্স দেবেন না।  
 4. সম্ভব হলে `trx_id` + `amount` একসাথে পাঠান।  
 5. `ALREADY_USED` এ আবার প্রোডাক্ট দেবেন না (নিজের অর্ডার লগ চেক করুন)।  
-6. `ATTACK` / `EXPIRED` = পেমেন্ট ব্যর্থ।
+6. `ATTACK` / `TOO_OLD` = পেমেন্ট ব্যর্থ।
 
 ---
 
@@ -261,4 +261,4 @@ curl -sS -X POST 'https://paypilot-5p9t.onrender.com/api/v1/status/devices' \
   -d '{"wallets":["bkash"]}'
 ```
 
-`online` = শেষ পিং **২ মিনিটের** মধ্যে। আনক্লেইমড পেমেন্ট ডিফল্ট **৬ ঘণ্টা** পর এক্সপায়ার (`verify`-এ `max_age_minutes` ডিফল্ট **৩৬০**)।
+`online` = শেষ পিং **২ মিনিটের** মধ্যে। ৬ ঘণ্টার বেশি পুরনো পেমেন্টে `TOO_OLD` (ম্যানুয়াল রিভিউ; অটো-এক্সপায়ার নয়) (`verify`-এ `max_age_minutes` ডিফল্ট **৩৬০**)।
