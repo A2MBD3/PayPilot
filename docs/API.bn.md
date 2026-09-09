@@ -10,7 +10,7 @@
 | **Endpoint** | `POST /api/v1/verify` |
 | **Auth** | `Authorization: Bearer <API_LICENSE>` |
 | **Content-Type** | `application/json` |
-| **রেট লিমিট** | প্রায় ৩০০ রিকোয়েস্ট / মিনিট |
+| **রেট লিমিট** | প্রায় ২৪০ রিকোয়েস্ট / মিনিট (প্রতি IP) |
 
 **API license** মার্চেন্ট ড্যাশবোর্ড → **Authorization → API license** থেকে পাবেন।  
 নতুন করে জেনারেট করলে পুরনো কী তাৎক্ষণিক বাতিল।
@@ -34,7 +34,7 @@ PayPilot পেমেন্ট একবারের জন্য claim কর�
 - সফল ভেরিফাই = **একবারের claim** (`used` / `claimed`)।
 - একই `trx_id` আবার যাচাই করা যাবে না (`ALREADY_USED`)।
 - `amount` দিলে SMS-এর অঙ্কের সাথে মিলতে হবে।
-- `max_age_minutes` ডিফল্ট **৬০**; পুরনো হলে `TOO_OLD`।
+- `max_age_minutes` ডিফল্ট **৩৬০** (৬ ঘণ্টা); পুরনো হলে `TOO_OLD` — সাথে `review_required: true` ও পেমেন্টের `data` ফেরত আসে (ম্যানুয়াল রিভিউয়ের জন্য; অটো-এক্সপায়ার হয় না)।
 
 ---
 
@@ -101,12 +101,38 @@ Content-Type: application/json
 | 400 | `NOT_FOUND` | এই মার্চেন্টের অধীনে TrxID নেই |
 | 400 | `AMOUNT_MISMATCH` | অঙ্ক মিলেনি |
 | 400 | `ALREADY_USED` | আগেই claim হয়েছে |
-| 400 | `TOO_OLD` | সময়সীমা পেরিয়েছে |
+| 400 | `TOO_OLD` | সময়সীমা পেরিয়েছে — সাথে **`review_required: true`** ও পেমেন্টের `data` ফেরত আসে (নিচে দেখুন) |
 | 400 | `ATTACK` | সন্দেহজনক — ডেলিভার করবেন না |
 | 401 | `UNAUTHORIZED` | API license ভুল/নেই |
 | 401 | `TOKEN_REVOKED` | লাইসেন্স regenerate হয়েছে |
 | 403 | `DISABLED` | অ্যাকাউন্ট বন্ধ |
 | 429 | `RATE_LIMITED` | অতিরিক্ত রিকোয়েস্ট |
+
+---
+
+## `TOO_OLD` — ম্যানুয়াল রিভিউ পেলোড
+
+সময়সীমার বেশি পুরনো পেমেন্ট **অটো-এক্সপায়ার হয় না**। API `400 TOO_OLD` দেয় এবং সাথে অতিরিক্ত ফিল্ড দেয়, যেন আপনার সার্ভার এটিকে ম্যানুয়াল রিভিউয়ের কিউতে রাখতে পারে:
+
+```json
+{
+  "success": false,
+  "code": "TOO_OLD",
+  "message": "Payment is older than the allowed window",
+  "review_required": true,
+  "data": {
+    "trx_id": "DI739OTDF3",
+    "amount": 100.0,
+    "sender": "01722858922",
+    "status": "available",
+    "app": "bKash",
+    "received_at": "2026-09-08T08:32:00.000Z",
+    "order_id": null
+  }
+}
+```
+
+পেমেন্ট `available` থাকে — রিভিউতে অনুমোদন হলে বড় `max_age_minutes` (সর্বোচ্চ `১৪৪০`) দিয়ে আবার যাচাই করা যায়।
 
 ---
 
@@ -262,3 +288,38 @@ curl -sS -X POST 'https://paypilot-5p9t.onrender.com/api/v1/status/devices' \
 ```
 
 `online` = শেষ পিং **২ মিনিটের** মধ্যে। ৬ ঘণ্টার বেশি পুরনো পেমেন্টে `TOO_OLD` (ম্যানুয়াল রিভিউ; অটো-এক্সপায়ার নয়) (`verify`-এ `max_age_minutes` ডিফল্ট **৩৬০**)।
+
+**সফল রেসপন্সের গঠন**
+
+```json
+{
+  "success": true,
+  "data": {
+    "business_name": "আমার দোকান",
+    "merchant_name": "আবদুল্লাহ",
+    "any_online": true,
+    "can_accept_payments": true,
+    "devices": [
+      {
+        "device_id": "...",
+        "device_name": "Pixel",
+        "app_version": "1.2.4",
+        "last_seen_at": "2026-09-09T04:00:00.000Z",
+        "seconds_ago": 4,
+        "online": true
+      }
+    ],
+    "wallets": [
+      {
+        "id": "...",
+        "name": "bKash",
+        "provider": "bkash",
+        "wallet_number": "01...",
+        "status": "active"
+      }
+    ],
+    "wallets_total_active": 1,
+    "checked_at": "2026-09-09T04:00:05.000Z"
+  }
+}
+```

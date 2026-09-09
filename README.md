@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/A2MBD3/PayPilot/releases/latest"><img src="https://img.shields.io/badge/download-v1.2.3-10B981?logo=github&label=Latest%20release" alt="Download"/></a>
+  <a href="https://github.com/A2MBD3/PayPilot/releases/latest"><img src="https://img.shields.io/badge/download-v1.2.4-10B981?logo=github&label=Latest%20release" alt="Download"/></a>
   <img src="https://img.shields.io/badge/Android-8.0%2B-3DDC84?logo=android&logoColor=white" alt="Android 8.0+"/>
   <img src="https://img.shields.io/badge/size-~2.5%20MB-blue" alt="APK size"/>
   <a href="docs/API.md"><img src="https://img.shields.io/badge/docs-API-2563EB" alt="API docs"/></a>
@@ -56,7 +56,7 @@ The app is built to run reliably around the clock. It starts automatically when 
 ## 🚀 Getting Started
 
 1. **Request a license** — PayPilot activates per device. See [docs/License.md](docs/License.md) for the license details and application steps, or [contact the developer](#-contact--support) directly.
-2. **Download the APK** — grab the latest `PayPilot-v1.2.3.apk` from the [Releases page](https://github.com/A2MBD3/PayPilot/releases/latest). Only ever download PayPilot from this official repository.
+2. **Download the APK** — grab the latest `PayPilot-v1.2.4.apk` from the [Releases page](https://github.com/A2MBD3/PayPilot/releases/latest). Only ever download PayPilot from this official repository.
    > 📦 From v1.2.2 the app uses the package `com.a2mbd3.paypilot` — it installs as a separate app next to any older version; sign in with the same license key, then uninstall the old app.
 3. **Install** — open the APK and allow "Install unknown apps" for your browser/file manager when Android asks (this is standard for apps distributed outside Google Play).
 4. **Accept the Terms** — on first launch, read and accept the Terms & Conditions to continue.
@@ -138,11 +138,14 @@ curl -X POST https://paypilot-5p9t.onrender.com/api/v1/verify \
 
 | Version | Date | Download |
 |---|---|---|
-| **v1.2.3** (latest) | 2026-09-08 | [PayPilot-v1.2.3.apk](https://github.com/A2MBD3/PayPilot/releases/download/v1.2.3/PayPilot-v1.2.3.apk) — [release notes](https://github.com/A2MBD3/PayPilot/releases/tag/v1.2.3) |
-| v1.2.2 | 2026-09-08 | package rename — superseded by v1.2.3 |
+| **v1.2.4** (latest) | 2026-09-08 | [PayPilot-v1.2.4.apk](https://github.com/A2MBD3/PayPilot/releases/download/v1.2.4/PayPilot-v1.2.4.apk) — [release notes](https://github.com/A2MBD3/PayPilot/releases/tag/v1.2.4) |
+| v1.2.3 | 2026-09-08 | wallet cards + SIM auto-detect — superseded by v1.2.4 |
+| v1.2.2 | 2026-09-08 | package rename — superseded |
 | v1.2.1 | 2026-09-08 | crash-fix release — superseded |
-| v1.2.0 | 2026-09-08 | superseded — had a startup crash, please use v1.2.3 |
+| v1.2.0 | 2026-09-08 | superseded — had a startup crash, please use v1.2.4 |
 
+> 🔐 APK SHA-256 (v1.2.4): `07ca1e3a808a0a7bf5249c123db7920970168d8597344b8a58a5b2408073d061`
+>
 > 🔐 APK SHA-256 (v1.2.3): `08ca20123b6f3bd782ee552b8df1622e251d88d4f6f0f57f384cdf32747141d6`
 
 > ⚠️ **v1.2.2 note:** the app package is now `com.a2mbd3.paypilot`, so that update installs as a **separate app** — sign in with your existing license key and then uninstall the old `com.teamcrx.paypilot` app. Updating from **v1.0.x**? Uninstall the old version first (the certificate changed at v1.2.0).

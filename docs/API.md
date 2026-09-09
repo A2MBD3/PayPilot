@@ -10,7 +10,7 @@
 | **Endpoint** | `POST /api/v1/verify` |
 | **Auth** | `Authorization: Bearer <API_LICENSE>` |
 | **Content-Type** | `application/json` |
-| **Rate limit** | ~300 requests / minute |
+| **Rate limit** | ≈240 requests / minute per IP |
 
 Your **API license** is issued in the merchant dashboard under **Authorization → API license**.  
 Regenerating it immediately revokes the previous key.
@@ -34,7 +34,7 @@ Your server fulfills the order
 - Verification is a **one-time claim**. A successful call sets status to `used` / `claimed`.
 - The same `trx_id` cannot be verified again (`ALREADY_USED`).
 - Optional `amount` must match the SMS amount when provided.
-- Optional `max_age_minutes` (default **60**) rejects older payments (`TOO_OLD`).
+- Optional `max_age_minutes` (default **360** = 6 hours) rejects older payments (`TOO_OLD` — returned with `review_required: true` for manual review, never auto-expired).
 
 ---
 
@@ -110,7 +110,7 @@ Envelope:
 | 400 | `NOT_FOUND` | Unknown `trx_id` for this merchant |
 | 400 | `AMOUNT_MISMATCH` | `amount` does not match |
 | 400 | `ALREADY_USED` | Already verified / claimed |
-| 400 | `TOO_OLD` | Older than `max_age_minutes` |
+| 400 | `TOO_OLD` | Older than `max_age_minutes` — returned **with `review_required: true`** and the payment `data` for manual review (see below) |
 | 400 | `ATTACK` | Flagged payment (do not fulfill) |
 | 401 | `UNAUTHORIZED` | Missing/invalid API license |
 | 401 | `TOKEN_REVOKED` | License was regenerated |
@@ -118,6 +118,30 @@ Envelope:
 | 429 | `RATE_LIMITED` | Too many requests |
 
 Only fulfill the order when `success === true` and `code === "VERIFIED"`.
+
+### `TOO_OLD` — manual review payload
+
+Payments older than `max_age_minutes` are **not auto-expired**. The API answers `400 TOO_OLD` with extra fields so your server can queue it for manual review:
+
+```json
+{
+  "success": false,
+  "code": "TOO_OLD",
+  "message": "Payment is older than the allowed window",
+  "review_required": true,
+  "data": {
+    "trx_id": "DI739OTDF3",
+    "amount": 100.0,
+    "sender": "01722858922",
+    "status": "available",
+    "app": "bKash",
+    "received_at": "2026-09-08T08:32:00.000Z",
+    "order_id": null
+  }
+}
+```
+
+The payment stays `available` — if your review approves it, verify again with a higher `max_age_minutes` (up to `1440`).
 
 ---
 
@@ -250,50 +274,50 @@ def verify_payment(trx_id: str, amount: float | None = None, order_id: str | Non
 package main
 
 import (
-	"bytes"
-	"encoding/json"
-	"fmt"
-	"io"
-	"net/http"
-	"os"
-	"time"
+        "bytes"
+        "encoding/json"
+        "fmt"
+        "io"
+        "net/http"
+        "os"
+        "time"
 )
 
 func verifyPayment(trxID string, amount *float64, orderID string) (map[string]any, error) {
-	payload := map[string]any{
-		"trx_id":          trxID,
-		"max_age_minutes": 60,
-	}
-	if amount != nil {
-		payload["amount"] = *amount
-	}
-	if orderID != "" {
-		payload["order_id"] = orderID
-	}
-	b, _ := json.Marshal(payload)
-	req, err := http.NewRequest(http.MethodPost, "https://paypilot-5p9t.onrender.com/api/v1/verify", bytes.NewReader(b))
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("Authorization", "Bearer "+os.Getenv("PAYPILOT_API_LICENSE"))
-	req.Header.Set("Content-Type", "application/json")
+        payload := map[string]any{
+                "trx_id":          trxID,
+                "max_age_minutes": 60,
+        }
+        if amount != nil {
+                payload["amount"] = *amount
+        }
+        if orderID != "" {
+                payload["order_id"] = orderID
+        }
+        b, _ := json.Marshal(payload)
+        req, err := http.NewRequest(http.MethodPost, "https://paypilot-5p9t.onrender.com/api/v1/verify", bytes.NewReader(b))
+        if err != nil {
+                return nil, err
+        }
+        req.Header.Set("Authorization", "Bearer "+os.Getenv("PAYPILOT_API_LICENSE"))
+        req.Header.Set("Content-Type", "application/json")
 
-	client := &http.Client{Timeout: 20 * time.Second}
-	res, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer res.Body.Close()
-	raw, _ := io.ReadAll(res.Body)
-	var body map[string]any
-	if err := json.Unmarshal(raw, &body); err != nil {
-		return nil, err
-	}
-	if body["success"] != true || body["code"] != "VERIFIED" {
-		return nil, fmt.Errorf("%v", body["message"])
-	}
-	data, _ := body["data"].(map[string]any)
-	return data, nil
+        client := &http.Client{Timeout: 20 * time.Second}
+        res, err := client.Do(req)
+        if err != nil {
+                return nil, err
+        }
+        defer res.Body.Close()
+        raw, _ := io.ReadAll(res.Body)
+        var body map[string]any
+        if err := json.Unmarshal(raw, &body); err != nil {
+                return nil, err
+        }
+        if body["success"] != true || body["code"] != "VERIFIED" {
+                return nil, fmt.Errorf("%v", body["message"])
+        }
+        data, _ := body["data"].(map[string]any)
+        return data, nil
 }
 ```
 
@@ -376,19 +400,30 @@ curl -sS -X POST 'https://paypilot-5p9t.onrender.com/api/v1/status/devices' \
   "success": true,
   "data": {
     "business_name": "My Shop",
+    "merchant_name": "Abdullah",
     "any_online": true,
     "can_accept_payments": true,
     "devices": [
       {
         "device_id": "...",
         "device_name": "Pixel",
+        "app_version": "1.2.4",
         "last_seen_at": "2026-09-09T04:00:00.000Z",
         "seconds_ago": 4,
         "online": true
       }
     ],
-    "wallets": [{ "name": "bKash", "provider": "bkash", "wallet_number": "01..." }],
-    "checked_at": "..."
+    "wallets": [
+      {
+        "id": "...",
+        "name": "bKash",
+        "provider": "bkash",
+        "wallet_number": "01...",
+        "status": "active"
+      }
+    ],
+    "wallets_total_active": 1,
+    "checked_at": "2026-09-09T04:00:05.000Z"
   }
 }
 ```

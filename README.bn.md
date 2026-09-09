@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/A2MBD3/PayPilot/releases/latest"><img src="https://img.shields.io/badge/%E0%A6%A1%E0%A6%BE%E0%A6%89%E0%A6%A8%E0%A6%B2%E0%A7%8B%E0%A6%A1-v1.2.3-10B981" alt="ডাউনলোড"/></a>
+  <a href="https://github.com/A2MBD3/PayPilot/releases/latest"><img src="https://img.shields.io/badge/%E0%A6%A1%E0%A6%BE%E0%A6%89%E0%A6%A8%E0%A6%B2%E0%A7%8B%E0%A6%A1-v1.2.4-10B981" alt="ডাউনলোড"/></a>
   <img src="https://img.shields.io/badge/Android-8.0%2B-3DDC84?logo=android&logoColor=white" alt="Android 8.0+"/>
   <img src="https://img.shields.io/badge/%E0%A6%B8%E0%A6%BE%E0%A6%87%E0%A6%9C-~2.5%20MB-blue" alt="APK সাইজ"/>
   <a href="docs/API.bn.md"><img src="https://img.shields.io/badge/ডকুমেন্টেশন-API-2563EB" alt="API docs"/></a>
@@ -56,7 +56,7 @@
 ## 🚀 কীভাবে শুরু করবেন
 
 1. **লাইসেন্স নিন** — PayPilot প্রতি ডিভাইসে লাইসেন্স দিয়ে চালু হয়। লাইসেন্সের বিবরণ ও আবেদনের নিয়ম [docs/License.md](docs/License.md)-এ দেখুন, অথবা সরাসরি [ডেভেলপারের সাথে যোগাযোগ](#-যোগাযোগ-ও-সহায়তা) করুন।
-2. **APK ডাউনলোড করুন** — [Releases পেজ](https://github.com/A2MBD3/PayPilot/releases/latest) থেকে সর্বশেষ `PayPilot-v1.2.3.apk` নামান। PayPilot **শুধুমাত্র এই অফিশিয়াল রিপোজিটরি থেকেই** ডাউনলোড করুন।
+2. **APK ডাউনলোড করুন** — [Releases পেজ](https://github.com/A2MBD3/PayPilot/releases/latest) থেকে সর্বশেষ `PayPilot-v1.2.4.apk` নামান। PayPilot **শুধুমাত্র এই অফিশিয়াল রিপোজিটরি থেকেই** ডাউনলোড করুন।
    > 📦 v1.2.2 থেকে অ্যাপের প্যাকেজ `com.a2mbd3.paypilot` — এটি পুরোনো অ্যাপের পাশাপাশি আলাদা অ্যাপ হিসেবে ইনস্টল হবে; একই লাইসেন্স কী দিয়ে সাইন-ইন করে পুরোনো অ্যাপটি আনইনস্টল করে দিন।
 3. **ইনস্টল করুন** — APK খুলুন; Android যখন জিজ্ঞেস করবে "অজানা অ্যাপ ইনস্টলের" অনুমতি দিন (Play Store-এর বাইরের অ্যাপের জন্য এটি স্বাভাবিক)।
 4. **শর্তাবলি মেনে নিন** — প্রথমবার খুললে শর্তাবলি পড়ে সম্মতি দিন।
@@ -138,11 +138,14 @@ curl -X POST https://paypilot-5p9t.onrender.com/api/v1/verify \
 
 | ভার্সন | তারিখ | ডাউনলোড |
 |---|---|---|
-| **v1.2.3** (সর্বশেষ) | ০৮-০৯-২০২৬ | [PayPilot-v1.2.3.apk](https://github.com/A2MBD3/PayPilot/releases/download/v1.2.3/PayPilot-v1.2.3.apk) — [রিলিজ নোট](https://github.com/A2MBD3/PayPilot/releases/tag/v1.2.3) |
-| v1.2.2 | ০৮-০৯-২০২৬ | প্যাকেজ রিনেম — v1.2.3 দ্বারা প্রতিস্থাপিত |
+| **v1.2.4** (সর্বশেষ) | ০৮-০৯-২০২৬ | [PayPilot-v1.2.4.apk](https://github.com/A2MBD3/PayPilot/releases/download/v1.2.4/PayPilot-v1.2.4.apk) — [রিলিজ নোট](https://github.com/A2MBD3/PayPilot/releases/tag/v1.2.4) |
+| v1.2.3 | ০৮-০৯-২০২৬ | ওয়ালেট কার্ড + সিম অটো-ডিটেক্ট — v1.2.4 দ্বারা প্রতিস্থাপিত |
+| v1.2.2 | ০৮-০৯-২০২৬ | প্যাকেজ রিনেম — প্রতিস্থাপিত |
 | v1.2.1 | ০৮-০৯-২০২৬ | ক্র্যাশ-ফিক্স রিলিজ — প্রতিস্থাপিত |
-| v1.2.0 | ০৮-০৯-২০২৬ | বাতিল — স্টার্টআপ ক্র্যাশ ছিল, v1.2.3 ব্যবহার করুন |
+| v1.2.0 | ০৮-০৯-২০২৬ | বাতিল — স্টার্টআপ ক্র্যাশ ছিল, v1.2.4 ব্যবহার করুন |
 
+> 🔐 APK SHA-256 (v1.2.4): `07ca1e3a808a0a7bf5249c123db7920970168d8597344b8a58a5b2408073d061`
+>
 > 🔐 APK SHA-256 (v1.2.3): `08ca20123b6f3bd782ee552b8df1622e251d88d4f6f0f57f384cdf32747141d6`
 
 > ⚠️ **v1.2.2 নোট:** অ্যাপ প্যাকেজ এখন `com.a2mbd3.paypilot` — তাই আপডেটটি **আলাদা অ্যাপ** হিসেবে ইনস্টল হবে। আপনার আগের লাইসেন্স কী দিয়ে সাইন-ইন করে পুরোনো `com.teamcrx.paypilot` অ্যাপটি আনইনস্টল করে দিন। **v1.0.x** থেকে? আগে পুরনো ভার্সন আনইনস্টল করুন (v1.2.0-তে সার্টিফিকেট বদলেছে)।
