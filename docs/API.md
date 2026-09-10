@@ -367,13 +367,20 @@ Support / license issues: use the contact channels on the main [README](../READM
 
 ---
 
-## Device status check (optional readiness)
+## Device & wallet status (optional)
 
 ### `POST /api/v1/status/devices` · `GET /api/v1/status/devices`
 
-Call from your **private server** with the **API license** to see if the merchant’s Android device is online (last ping) before accepting an order.
+Call from your **private server** with the **API Token** to learn:
 
-**Auth:** `Authorization: Bearer <API_LICENSE>`
+- which **wallets** the merchant has active
+- which **device** last received a payment for each wallet
+- how long ago that device last pinged the server (`device_seconds_ago`)
+
+PayPilot does **not** decide whether you should accept an order. Use `device_seconds_ago` / `device_last_seen_at` with your own threshold.
+
+**Auth:** `Authorization: Bearer <API_TOKEN>`  
+(API Token only — the app **License** is rejected.)
 
 **Body (POST) or query (GET)**
 
@@ -382,18 +389,25 @@ Call from your **private server** with the **API license** to see if the merchan
 | `wallets` | Optional array of wallet id / provider / number |
 | `wallet` | Optional single value (POST) or `?wallet=bkash` (GET) |
 
-If omitted, **all devices** and **all active wallets** are returned. If set, wallets are filtered; devices linked to those wallets (recent payments) are preferred.
+If omitted, **all active wallets** and **all known devices** are returned. If set, only matching wallets (and devices that appear on those wallets) are emphasized in the wallet list.
 
-**Example**
+### How wallet → device is chosen
+
+For each wallet, the server looks at payment history and picks the **device that most recently received money** on that wallet (`device_id` from the latest matching transaction). That device’s last heartbeat is then attached to the wallet.
+
+- No payment yet on a wallet → `device_id` / `device_seconds_ago` are `null`
+- Device removed from records but still referenced → `device_id` may be set with `device_seconds_ago: null`
+
+### Example
 
 ```bash
 curl -sS -X POST 'https://paypilot-5p9t.onrender.com/api/v1/status/devices' \
-  -H "Authorization: Bearer $PAYPILOT_API_LICENSE" \
+  -H "Authorization: Bearer $PAYPILOT_API_TOKEN" \
   -H 'Content-Type: application/json' \
   -d '{"wallets":["bkash"]}'
 ```
 
-**Success**
+### Success response
 
 ```json
 {
@@ -402,15 +416,23 @@ curl -sS -X POST 'https://paypilot-5p9t.onrender.com/api/v1/status/devices' \
     "business_name": "My Shop",
     "merchant_name": "Abdullah",
     "any_online": true,
-    "can_accept_payments": true,
     "devices": [
       {
-        "device_id": "...",
+        "device_id": "abc-123",
         "device_name": "Pixel",
         "app_version": "1.2.4",
-        "last_seen_at": "2026-09-09T04:00:00.000Z",
+        "last_seen_at": "2026-09-10T06:00:00.000Z",
         "seconds_ago": 4,
-        "online": true
+        "online": true,
+        "wallets": [
+          {
+            "id": "...",
+            "name": "bKash",
+            "provider": "bkash",
+            "wallet_number": "01...",
+            "last_payment_at": "2026-09-10T05:55:00.000Z"
+          }
+        ]
       }
     ],
     "wallets": [
@@ -419,13 +441,33 @@ curl -sS -X POST 'https://paypilot-5p9t.onrender.com/api/v1/status/devices' \
         "name": "bKash",
         "provider": "bkash",
         "wallet_number": "01...",
-        "status": "active"
+        "status": "active",
+        "device_id": "abc-123",
+        "device_name": "Pixel",
+        "device_last_seen_at": "2026-09-10T06:00:00.000Z",
+        "device_seconds_ago": 4,
+        "device_online": true,
+        "last_payment_at": "2026-09-10T05:55:00.000Z"
       }
     ],
     "wallets_total_active": 1,
-    "checked_at": "2026-09-09T04:00:05.000Z"
+    "checked_at": "2026-09-10T06:00:05.000Z"
   }
 }
 ```
 
-`online` = last ping within **2 minutes**. Payments older than **6 hours** return `TOO_OLD` (manual review; not auto-expired) (`max_age_minutes` default **360** on verify).
+### Field notes
+
+| Field | Meaning |
+|-------|---------|
+| `wallets[].device_id` | Device that last received a payment for this wallet |
+| `wallets[].device_seconds_ago` | Seconds since that device’s last server ping (`null` if unknown) |
+| `wallets[].device_online` | Convenience flag: last ping within **2 minutes** |
+| `wallets[].last_payment_at` | Time of the payment used to bind wallet → device |
+| `devices[].seconds_ago` | Seconds since this device last pinged |
+| `devices[].wallets` | Wallets whose last payment arrived on this device |
+| `any_online` | At least one device pinged within 2 minutes |
+
+**Removed:** `can_accept_payments` — your server chooses the offline threshold (e.g. reject if `device_seconds_ago > 120`).
+
+**Related (verify):** payments older than **6 hours** return `TOO_OLD` with `review_required` (not auto-expired). Default `max_age_minutes` on verify is **360**.

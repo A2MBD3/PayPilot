@@ -270,43 +270,71 @@ def verify_payment(trx_id: str, amount: float | None = None, order_id: str | Non
 
 ---
 
-## ডিভাইস স্ট্যাটাস চেক (ঐচ্ছিক)
+## ডিভাইস ও ওয়ালেট স্ট্যাটাস (ঐচ্ছিক)
 
 ### `POST /api/v1/status/devices` · `GET /api/v1/status/devices`
 
-অর্ডার নেওয়ার আগে মার্চেন্টের Android ডিভাইস অনলাইন কিনা (**API license** দিয়ে প্রাইভেট সার্ভার থেকে) দেখুন।
+প্রাইভেট সার্ভার থেকে **API Token** দিয়ে জানুন:
 
-**Auth:** `Authorization: Bearer <API_LICENSE>`
+- মার্চেন্টের কোন **ওয়ালেট** অ্যাকটিভ
+- প্রতি ওয়ালেটে **সর্বশেষ কোন ডিভাইস** টাকা পেয়েছে
+- সেই ডিভাইস সর্বশেষ কত সেকেন্ড আগে সার্ভারে পিং দিয়েছে (`device_seconds_ago`)
 
-ঐচ্ছিক `wallets` / `wallet` — নির্দিষ্ট ওয়ালেট (id / provider / নম্বর)। না দিলে সব ডিভাইস।
+PayPilot **বলবে না** অর্ডার নেওয়া যাবে কি না — `device_seconds_ago` / `device_last_seen_at` দেখে **আপনার সার্ভার** থ্রেশহোল্ড ঠিক করবে।
+
+**Auth:** `Authorization: Bearer <API_TOKEN>`  
+(শুধু API Token — অ্যাপ **License** দিয়ে চলবে না।)
+
+**Body (POST) বা query (GET)**
+
+| ফিল্ড | বিবরণ |
+|-------|--------|
+| `wallets` | ঐচ্ছিক — ওয়ালেট id / provider / নম্বরের অ্যারে |
+| `wallet` | ঐচ্ছিক একক মান (POST) বা `?wallet=bkash` (GET) |
+
+না দিলে সব অ্যাকটিভ ওয়ালেট ও সব পরিচিত ডিভাইস। দিলে ওয়ালেট তালিকা ফিল্টার হয়।
+
+### ওয়ালেট → ডিভাইস কীভাবে বাঁধা হয়
+
+প্রতি ওয়ালেটের জন্য সার্ভার পেমেন্ট হিস্ট্রি দেখে **যে ডিভাইসে সর্বশেষ টাকা এসেছে** সেটিকে বেছে নেয়, তারপর সেই ডিভাইসের শেষ হার্টবিট যোগ করে।
+
+- ওয়ালেটে এখনো কোনো পেমেন্ট না থাকলে → `device_id` / `device_seconds_ago` = `null`
+
+### উদাহরণ
 
 ```bash
 curl -sS -X POST 'https://paypilot-5p9t.onrender.com/api/v1/status/devices' \
-  -H "Authorization: Bearer $PAYPILOT_API_LICENSE" \
+  -H "Authorization: Bearer $PAYPILOT_API_TOKEN" \
   -H 'Content-Type: application/json' \
   -d '{"wallets":["bkash"]}'
 ```
 
-`online` = শেষ পিং **২ মিনিটের** মধ্যে। ৬ ঘণ্টার বেশি পুরনো পেমেন্টে `TOO_OLD` (ম্যানুয়াল রিভিউ; অটো-এক্সপায়ার নয়) (`verify`-এ `max_age_minutes` ডিফল্ট **৩৬০**)।
-
-**সফল রেসপন্সের গঠন**
+### সাকসেস রেসপন্স
 
 ```json
 {
   "success": true,
   "data": {
-    "business_name": "আমার দোকান",
-    "merchant_name": "আবদুল্লাহ",
+    "business_name": "My Shop",
+    "merchant_name": "Abdullah",
     "any_online": true,
-    "can_accept_payments": true,
     "devices": [
       {
-        "device_id": "...",
+        "device_id": "abc-123",
         "device_name": "Pixel",
         "app_version": "1.2.4",
-        "last_seen_at": "2026-09-09T04:00:00.000Z",
+        "last_seen_at": "2026-09-10T06:00:00.000Z",
         "seconds_ago": 4,
-        "online": true
+        "online": true,
+        "wallets": [
+          {
+            "id": "...",
+            "name": "bKash",
+            "provider": "bkash",
+            "wallet_number": "01...",
+            "last_payment_at": "2026-09-10T05:55:00.000Z"
+          }
+        ]
       }
     ],
     "wallets": [
@@ -315,11 +343,33 @@ curl -sS -X POST 'https://paypilot-5p9t.onrender.com/api/v1/status/devices' \
         "name": "bKash",
         "provider": "bkash",
         "wallet_number": "01...",
-        "status": "active"
+        "status": "active",
+        "device_id": "abc-123",
+        "device_name": "Pixel",
+        "device_last_seen_at": "2026-09-10T06:00:00.000Z",
+        "device_seconds_ago": 4,
+        "device_online": true,
+        "last_payment_at": "2026-09-10T05:55:00.000Z"
       }
     ],
     "wallets_total_active": 1,
-    "checked_at": "2026-09-09T04:00:05.000Z"
+    "checked_at": "2026-09-10T06:00:05.000Z"
   }
 }
 ```
+
+### ফিল্ড নোট
+
+| ফিল্ড | অর্থ |
+|-------|------|
+| `wallets[].device_id` | এই ওয়ালেটে সর্বশেষ পেমেন্ট যে ডিভাইসে এসেছে |
+| `wallets[].device_seconds_ago` | সেই ডিভাইসের শেষ পিং থেকে কত সেকেন্ড |
+| `wallets[].device_online` | শেষ পিং **২ মিনিটের** মধ্যে হলে `true` |
+| `wallets[].last_payment_at` | ওয়ালেট→ডিভাইস বাঁধার পেমেন্টের সময় |
+| `devices[].seconds_ago` | ডিভাইসের শেষ পিং থেকে সেকেন্ড |
+| `devices[].wallets` | যেসব ওয়ালেটের শেষ পেমেন্ট এই ডিভাইসে এসেছে |
+| `any_online` | অন্তত একটি ডিভাইস ২ মিনিটের মধ্যে পিং দিয়েছে |
+
+**সরানো:** `can_accept_payments` — অফলাইন সীমা আপনার সার্ভার ঠিক করবে (যেমন `device_seconds_ago > 120` হলে অর্ডার নেবেন না)।
+
+**Verify সম্পর্কিত:** ৬ ঘণ্টার বেশি পুরনো পেমেন্ট `TOO_OLD` + `review_required` (অটো-এক্সপায়ার নয়)। ডিফল্ট `max_age_minutes` = **360**।
