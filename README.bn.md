@@ -85,7 +85,14 @@ PayPilot একটি **লাইসেন্সভিত্তিক** পণ�
 
 ## যোগাযোগ
 
-লাইসেন্স ও অ্যাকাউন্টের জন্য যে অপারেটর আপনাকে অ্যাকাউন্ট দিয়েছেন, তার সাথে যোগাযোগ করুন।
+| | |
+|--|--|
+| **ইমেইল** | [aam.abdullah1@hotmail.com](mailto:aam.abdullah1@hotmail.com) |
+| **টেলিগ্রাম** | [t.me/a2mbd3](https://t.me/a2mbd3) |
+| **ফেসবুক** | [facebook.com/a2mbd3](https://facebook.com/a2mbd3) |
+| **GitHub** | [github.com/A2MBD3](https://github.com/A2MBD3) |
+
+লাইসেন্স ও অ্যাকাউন্টের জন্য উপরের যেকোনো মাধ্যমে যোগাযোগ করুন।
 
 ---
 

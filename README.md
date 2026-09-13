@@ -85,7 +85,14 @@ See also: [License](docs/License.md) · [Terms](PayPilot_TC.md)
 
 ## Contact
 
-For license and access, contact the PayPilot operator who issued your account.
+| | |
+|--|--|
+| **Email** | [aam.abdullah1@hotmail.com](mailto:aam.abdullah1@hotmail.com) |
+| **Telegram** | [t.me/a2mbd3](https://t.me/a2mbd3) |
+| **Facebook** | [facebook.com/a2mbd3](https://facebook.com/a2mbd3) |
+| **GitHub** | [github.com/A2MBD3](https://github.com/A2MBD3) |
+
+For license and access, message any of the channels above.
 
 ---
 
