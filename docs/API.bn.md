@@ -260,8 +260,7 @@ def verify_payment(trx_id: str, amount: float | None = None, order_id: str | Non
 
 ## API license কোথায় পাবেন
 
-1. মার্চেন্ট ড্যাশবোর্ডে লগইন  
-2. **Authorization** ট্যাব  
+1. অপারেটর থেকে ইস্যু করা **API token** নিন
 3. **API license** কপি করুন (মোবাইল App license নয়)  
 4. শুধু সার্ভার এনভে রাখুন: `PAYPILOT_API_LICENSE`
 
