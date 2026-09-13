@@ -12,7 +12,7 @@
 | **Content-Type** | `application/json` |
 | **রেট লিমিট** | প্রায় ২৪০ রিকোয়েস্ট / মিনিট (প্রতি IP) |
 
-**API license** মার্চেন্ট ড্যাশবোর্ড → **Authorization → API license** থেকে পাবেন।  
+**API token** আপনার মার্চেন্ট লাইসেন্সের সাথে ইস্যু হয়। শুধু প্রাইভেট সার্ভারে রাখুন।  
 নতুন করে জেনারেট করলে পুরনো কী তাৎক্ষণিক বাতিল।
 
 ---
@@ -258,11 +258,10 @@ def verify_payment(trx_id: str, amount: float | None = None, order_id: str | Non
 
 ---
 
-## API license কোথায় পাবেন
+## API token কোথায় পাবেন
 
-1. অপারেটর থেকে ইস্যু করা **API token** নিন
-3. **API license** কপি করুন (মোবাইল App license নয়)  
-4. শুধু সার্ভার এনভে রাখুন: `PAYPILOT_API_LICENSE`
+1. অপারেটর থেকে ইস্যু করা **API token** নিন (মোবাইল App license নয়)
+2. শুধু সার্ভার এনভে রাখুন: `PAYPILOT_API_LICENSE` / `PAYPILOT_API_TOKEN`
 
 যোগাযোগ: মূল [README.bn.md](../README.bn.md)।
 
