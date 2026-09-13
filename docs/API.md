@@ -12,7 +12,7 @@
 | **Content-Type** | `application/json` |
 | **Rate limit** | ≈240 requests / minute per IP |
 
-Your **API license** is issued in the merchant dashboard under **Authorization → API license**.  
+Your **API token** is issued with your merchant license. Keep it only on your private server.  
 Regenerating it immediately revokes the previous key.
 
 ---
